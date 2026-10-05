@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `idx_single_priority` ON `wishlist_item` (`priority_flag`) WHERE priority_flag = 1;

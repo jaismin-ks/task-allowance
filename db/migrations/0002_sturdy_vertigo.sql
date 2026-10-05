@@ -1,0 +1,1 @@
+ALTER TABLE `wishlist_item` ADD `currency` text;
