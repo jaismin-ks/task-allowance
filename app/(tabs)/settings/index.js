@@ -3,10 +3,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { router, useFocusEffect, useScrollToTop } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SCREEN_GUTTER, useBottomChrome } from '../../../components/layout';
 import { AccentPicker } from '../../../components/AccentPicker';
+import { ReminderSettings } from '../../../components/ReminderSettings';
 import { ResetDataModal } from '../../../components/ResetDataModal';
 import { SettingsGroup, SettingsRow } from '../../../components/SettingsList';
 import { AppText } from '../../../components/ui/AppText';
@@ -16,6 +17,8 @@ import { TextField } from '../../../components/ui/TextField';
 import { Toggle } from '../../../components/ui/Toggle';
 import { updateProfile } from '../../../db/operations/userProfile';
 import { resetAllData } from '../../../db/operations/wishlist';
+import { RESTORE_ERRORS, summarizeBackup } from '../../../lib/backup';
+import { exportBackup, pickBackup, restoreBackup } from '../../../lib/backupFile';
 import { runCompletionIntegrityCheck } from '../../../lib/devChecks';
 import { formatMoney } from '../../../lib/format';
 import { deleteAllItemPhotos } from '../../../lib/itemPhotos';
@@ -23,6 +26,7 @@ import { flags, usePrefs } from '../../../lib/prefs';
 import { isVoiceSupported } from '../../../lib/voiceInput';
 import { usePoolStore } from '../../../store/poolStore';
 import { useTaskStore } from '../../../store/taskStore';
+import { showToast } from '../../../store/uiStore';
 import { useWishlistStore } from '../../../store/wishlistStore';
 import { makeStyles, useColors } from '../../../theme/theme';
 
@@ -54,6 +58,7 @@ export default function SettingsScreen() {
   });
   const [resetOpen, setResetOpen] = useState(false);
   const [checkResults, setCheckResults] = useState(null);
+  const backupBusy = useRef(false); // the share sheet and file picker open async; ignore double taps
   const currency = budget.currencyCode;
 
   useFocusEffect(useCallback(() => refresh(), [refresh]));
@@ -68,12 +73,71 @@ export default function SettingsScreen() {
     resetAllData();
     deleteAllItemPhotos();
     flags.clearAll();
-    usePrefs.setState({ haptics: true, motion: 'system' });
+    usePrefs.setState({ haptics: true, motion: 'system', reminder: false, reminderTime: '19:00' });
     await AsyncStorage.removeItem('lastKnownMonthKey');
     useTaskStore.getState().load();
     useWishlistStore.getState().loadItems();
     refresh();
     router.replace('/onboarding');
+  };
+
+  const backUp = async () => {
+    if (backupBusy.current) return;
+    backupBusy.current = true;
+    try {
+      const result = await exportBackup();
+      if (result.status === 'unavailable') {
+        Alert.alert('Sharing isn’t available', 'This phone can’t open the share sheet right now, so the backup wasn’t saved.');
+      }
+    } catch {
+      Alert.alert('Couldn’t back up your data', 'Nothing on this phone was changed. Try again in a moment.');
+    } finally {
+      backupBusy.current = false;
+    }
+  };
+
+  const applyRestore = (backup) => {
+    try {
+      restoreBackup(backup);
+    } catch {
+      Alert.alert('Couldn’t restore that file', 'Something went wrong while restoring. Nothing on this phone was changed.');
+      return;
+    }
+    useTaskStore.getState().load();
+    useWishlistStore.getState().loadItems();
+    refresh();
+    const restoredName = usePoolStore.getState().profile?.displayName;
+    setName(restoredName && restoredName !== 'Me' ? restoredName : '');
+    showToast('Backup restored.');
+  };
+
+  const restore = async () => {
+    if (backupBusy.current) return;
+    backupBusy.current = true;
+    let picked;
+    try {
+      picked = await pickBackup();
+    } catch {
+      picked = { status: 'invalid', error: 'not-backup' };
+    } finally {
+      backupBusy.current = false;
+    }
+    if (picked.status === 'canceled') return;
+    if (picked.status === 'invalid') {
+      Alert.alert('Couldn’t restore that file', RESTORE_ERRORS[picked.error]);
+      return;
+    }
+    const { exportedAt, tasks, wishlistItems } = summarizeBackup(picked.backup);
+    const date = exportedAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    const counts = `${tasks} ${tasks === 1 ? 'task' : 'tasks'}, ${wishlistItems} wishlist ${wishlistItems === 1 ? 'item' : 'items'}`;
+    Alert.alert(
+      'Replace everything on this phone?',
+      `Your tasks, wishlist and history here will be replaced with the backup from ${date} (${counts}). This can’t be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Restore', style: 'destructive', onPress: () => applyRestore(picked.backup) },
+      ]
+    );
   };
 
   return (
@@ -87,6 +151,11 @@ export default function SettingsScreen() {
         <AppText variant="h1" accessibilityRole="header">Settings</AppText>
 
         <SettingsGroup title="Allowance">
+          <SettingsRow
+            label="Activity"
+            helper="Your streak, history and totals."
+            onPress={() => router.push('/activity')}
+          />
           <SettingsRow
             label="Monthly allowance"
             value={formatMoney(budget.monthlyAllowanceCap, currency, { trim: true })}
@@ -171,6 +240,10 @@ export default function SettingsScreen() {
           </View>
         </SettingsGroup>
 
+        <SettingsGroup title="Reminder">
+          <ReminderSettings />
+        </SettingsGroup>
+
         <SettingsGroup title="Profile">
           <View style={styles.inline}>
             <TextField
@@ -189,7 +262,12 @@ export default function SettingsScreen() {
           </View>
         </SettingsGroup>
 
-        <SettingsGroup title="Data">
+        <SettingsGroup
+          title="Data"
+          footer="Backups include your tasks, wishlist, photos and history. Theme and other preferences aren’t included."
+        >
+          <SettingsRow label="Back up data" helper="Save a file you can restore on any phone." onPress={backUp} />
+          <SettingsRow label="Restore from backup" helper="Replaces everything on this phone." onPress={restore} />
           <SettingsRow label="Reset all data" danger onPress={() => setResetOpen(true)} last />
         </SettingsGroup>
 

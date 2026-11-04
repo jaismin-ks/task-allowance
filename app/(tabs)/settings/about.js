@@ -26,6 +26,8 @@ const SECTIONS = [
       'Your tasks, wishlist and earnings are stored only on this phone. There’s no account and nothing is synced.',
       'When you use “Fetch details”, the product link is sent to our server so it can read the store page. Nothing else is sent with it.',
       'Voice input uses your phone’s speech recognition to turn speech into a task title. Audio isn’t saved by TaskAllowance.',
+      'The daily reminder is scheduled on this phone. Nothing about your tasks is sent anywhere to make it work.',
+      'A backup file holds all your tasks, wishlist and history, and isn’t encrypted. Keep it somewhere private.',
       '“Reset all data” in Settings permanently erases everything on this phone.',
     ],
   },
@@ -35,7 +37,7 @@ const SECTIONS = [
     body: [
       'Currency only changes the symbol. Amounts are never converted, including prices from stores in other currencies.',
       'Some stores block automatic fetching. You can always add the details yourself.',
-      'Your data lives on this phone only, so deleting the app or resetting erases it. There’s no backup yet.',
+      'Your data lives on this phone only, so deleting the app or resetting erases it. Use “Back up data” in Settings to save a copy you can restore later. Backups aren’t made automatically, and theme and other preferences aren’t included.',
       'Completed tasks can only be undone for a few seconds, and can’t be edited after that.',
     ],
   },

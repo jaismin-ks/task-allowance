@@ -8,6 +8,7 @@ import { DailyGuideStrip } from '../../components/DailyGuideStrip';
 import { GoalCard } from '../../components/GoalCard';
 import { SCREEN_GUTTER, useBottomChrome } from '../../components/layout';
 import { RepeatingList } from '../../components/RepeatingList';
+import { StreakChip } from '../../components/StreakChip';
 import { TaskRow } from '../../components/TaskRow';
 import { TaskToolbar } from '../../components/TaskToolbar';
 import { AppText } from '../../components/ui/AppText';
@@ -38,7 +39,8 @@ export default function TasksScreen() {
   useScrollToTop(scrollRef);
 
   const { pending, completedToday, series, loaded, load } = useTaskStore();
-  const { progress, profile, earnedToday, dailyCap, overAllowance, budget, refresh } = usePoolStore();
+  const { progress, profile, earnedToday, dailyCap, overAllowance, budget, streak, goalEtaDays, refresh } =
+    usePoolStore();
   const wishlistCount = useWishlistStore((s) => s.others.length + (s.goal ? 1 : 0));
   const loadWishlist = useWishlistStore((s) => s.loadItems);
   const voiceAvailable = useVoiceAvailable();
@@ -110,7 +112,10 @@ export default function TasksScreen() {
         ]}
       >
         <View style={styles.header}>
-          <AppText variant="caption" color={colors.textMuted}>{formatHeaderDate()}</AppText>
+          <View style={styles.headerTop}>
+            <AppText variant="caption" color={colors.textMuted}>{formatHeaderDate()}</AppText>
+            <StreakChip streak={streak} />
+          </View>
           <AppText variant="h1" accessibilityRole="header">
             {greeting()}
             {name}
@@ -126,7 +131,12 @@ export default function TasksScreen() {
           </View>
         ) : loaded ? (
           <>
-            <GoalCard progress={progress} currency={currency} hasWishlistItems={wishlistCount > 0} />
+            <GoalCard
+              progress={progress}
+              currency={currency}
+              hasWishlistItems={wishlistCount > 0}
+              etaDays={goalEtaDays}
+            />
             <DailyGuideStrip
               earnedToday={earnedToday}
               dailyGuide={dailyCap}
@@ -206,6 +216,7 @@ const useStyles = makeStyles((colors) => ({
   screen: { flex: 1, backgroundColor: colors.bg },
   content: { paddingHorizontal: SCREEN_GUTTER, gap: 16 },
   header: { gap: 6, marginBottom: 4 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 32 },
   gap: { gap: 12 },
   sectionHeader: {
     flexDirection: 'row',

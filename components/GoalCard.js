@@ -4,6 +4,7 @@
 import { router } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import { formatMoney, moneyToWords } from '../lib/format';
+import { describeEta } from '../lib/stats';
 import { radius } from '../theme/tokens';
 import { makeStyles, useColors } from '../theme/theme';
 import { AppText } from './ui/AppText';
@@ -12,7 +13,7 @@ import { CountUp } from './ui/CountUp';
 import { Icon } from './ui/Icon';
 import { ProgressBar } from './ui/ProgressBar';
 
-export function GoalCard({ progress, currency, hasWishlistItems }) {
+export function GoalCard({ progress, currency, hasWishlistItems, etaDays }) {
   const colors = useColors();
   const styles = useStyles();
   if (!progress) {
@@ -56,13 +57,18 @@ export function GoalCard({ progress, currency, hasWishlistItems }) {
 
   const money = (n, opts) => formatMoney(n, currency, opts);
   const pct = Math.floor(progress.percentage);
+  const eta = describeEta(etaDays);
 
   return (
     <Pressable
       onPress={open}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
       accessibilityRole="button"
-      accessibilityLabel={`Saving for ${progress.itemTitle}`}
+      accessibilityLabel={
+        `Saving for ${progress.itemTitle}. ` +
+        `${moneyToWords(progress.available, currency)} of ${moneyToWords(progress.price, currency)}` +
+        (progress.reached ? '. Ready to buy.' : `, ${pct} percent.${eta ? ` At your recent pace, ${eta}.` : ''}`)
+      }
       accessibilityHint="Opens item details"
     >
       <View style={styles.headRow}>
@@ -106,6 +112,11 @@ export function GoalCard({ progress, currency, hasWishlistItems }) {
           <AppText variant="caption" color={colors.textMuted}>
             {pct}% · {money(progress.remaining)} TO GO
           </AppText>
+          {eta && (
+            <AppText variant="small" color={colors.textMuted}>
+              At your recent pace, {eta}.
+            </AppText>
+          )}
         </>
       )}
     </Pressable>

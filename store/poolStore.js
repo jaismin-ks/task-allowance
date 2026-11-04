@@ -3,8 +3,11 @@ import { create } from 'zustand';
 import { sqlite } from '../db/client';
 import { getBudgetInfo } from '../db/operations/getBudgetInfo';
 import { getPriorityItemProgress } from '../db/operations/getProgress';
+import { getCompletionDays, getDailyEarnings } from '../db/operations/stats';
 import { getProfile } from '../db/operations/userProfile';
 import { computeDailyCap } from '../lib/dailyCap';
+import { addDays, dateKey } from '../lib/recurrence';
+import { computeStreak, daysToGoal, recentDailyPace } from '../lib/stats';
 
 function getEarnedToday() {
   return (
@@ -28,6 +31,9 @@ export const usePoolStore = create((set) => ({
   dailyCap: 0,
   tierRanges: [],
   overAllowance: false,
+  streak: { current: 0, best: 0, doneToday: false },
+  // Days until the goal at the last two weeks' pace; null until there's enough history
+  goalEtaDays: null,
   refresh: () => {
     const budget = getBudgetInfo();
     const earnedToday = getEarnedToday();
@@ -35,14 +41,18 @@ export const usePoolStore = create((set) => ({
       budget.monthlyAllowanceCap,
       budget.totalEarnedThisMonth - earnedToday
     );
+    const progress = getPriorityItemProgress();
+    const pace = recentDailyPace(getDailyEarnings(dateKey(addDays(new Date(), -13))));
     set({
       profile: getProfile(),
-      progress: getPriorityItemProgress(),
+      progress,
       budget,
       earnedToday,
       dailyCap,
       tierRanges,
       overAllowance: budget.totalEarnedThisMonth >= budget.monthlyAllowanceCap,
+      streak: computeStreak(getCompletionDays()),
+      goalEtaDays: progress?.price != null && !progress.reached ? daysToGoal(progress.remaining, pace) : null,
     });
   },
 }));

@@ -14,14 +14,16 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as SystemUI from 'expo-system-ui';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo } from 'react';
-import { AppState, Platform, Text, View } from 'react-native';
+import { AppState, Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { CrashScreen } from '../components/CrashScreen';
 import { OverlayHost } from '../components/OverlayHost';
 import { db, sqlite } from '../db/client';
 import migrations from '../db/migrations/migrations';
 import { getProfile } from '../db/operations/userProfile';
 import { cleanUpOrphanPhotos } from '../lib/itemPhotos';
 import { checkMonthRollover } from '../lib/monthRollover';
+import { useReminderSync } from '../lib/reminders';
 import { usePoolStore } from '../store/poolStore';
 import { makeStyles, useColors } from '../theme/theme';
 
@@ -72,6 +74,8 @@ export default function RootLayout() {
   });
   const ready = success && (fontsLoaded || !!fontError);
   const navReady = !!useRootNavigationState()?.key;
+  // Daily reminder schedule follows tasks, earnings and the setting
+  useReminderSync(ready);
 
   useEffect(() => {
     if (ready || error) SplashScreen.hideAsync();
@@ -117,9 +121,11 @@ export default function RootLayout() {
 
   if (error) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>Database migration failed: {error.message}</Text>
-      </View>
+      <CrashScreen
+        title="Couldn’t open your data"
+        body="TaskAllowance couldn’t update its database after an app update. Your tasks and wishlist are still on this phone. Close the app fully and open it again. If this keeps happening, copy the details below and send them to us."
+        error={error}
+      />
     );
   }
 
@@ -146,6 +152,7 @@ export default function RootLayout() {
           <Stack.Screen name="next-goal" options={sheet([0.75])} />
           <Stack.Screen name="goal-reached" options={focusModal} />
           <Stack.Screen name="month-summary" options={sheet('fitToContents')} />
+          <Stack.Screen name="activity" options={sheet([0.92])} />
         </Stack>
         <OverlayHost />
       </ThemeProvider>
@@ -153,14 +160,19 @@ export default function RootLayout() {
   );
 }
 
+// Any uncaught render error lands here instead of a blank or red screen. Retry
+// re-renders the tree; data is in SQLite, so nothing is lost.
+export function ErrorBoundary({ error, retry }) {
+  return (
+    <CrashScreen
+      title="Something went wrong"
+      body="This screen hit a problem. Your tasks, earnings and wishlist are safe on this phone."
+      error={error}
+      onRetry={retry}
+    />
+  );
+}
+
 const useStyles = makeStyles((colors) => ({
   fill: { flex: 1, backgroundColor: colors.bg },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: colors.bg,
-  },
-  errorText: { color: colors.danger, textAlign: 'center' },
 }));

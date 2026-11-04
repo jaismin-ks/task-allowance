@@ -4,6 +4,7 @@
 import {
   ArrowRight,
   Camera,
+  ChartColumn,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -21,6 +22,7 @@ import {
   Pencil,
   Plus,
   Repeat,
+  RotateCcw,
   Search,
   SlidersHorizontal,
   Sparkles,
@@ -28,6 +30,7 @@ import {
   Target,
   Trash2,
   TriangleAlert,
+  Trophy,
   X,
 } from 'lucide-react-native';
 import { useColors } from '../../theme/theme';
@@ -35,6 +38,7 @@ import { useColors } from '../../theme/theme';
 const ICONS = {
   'arrow-right': ArrowRight,
   camera: Camera,
+  chart: ChartColumn,
   check: Check,
   'chevron-left': ChevronLeft,
   'chevron-right': ChevronRight,
@@ -52,6 +56,7 @@ const ICONS = {
   pencil: Pencil,
   plus: Plus,
   repeat: Repeat,
+  retry: RotateCcw,
   search: Search,
   sliders: SlidersHorizontal,
   sparkle: Sparkles,
@@ -59,6 +64,7 @@ const ICONS = {
   target: Target,
   trash: Trash2,
   warning: TriangleAlert,
+  trophy: Trophy,
   close: X,
 };
 
