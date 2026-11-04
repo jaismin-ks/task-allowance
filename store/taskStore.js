@@ -11,7 +11,7 @@ import { generateDueOccurrences, listActiveSeries } from '../db/operations/recur
 const SELECT = `SELECT task.id, task.title, task.monetary_value AS monetaryValue,
   task.effort_rating AS effortRating, task.completion_status AS completionStatus, task.source,
   task.completed_at AS completedAt, task.timestamp, task.series_id AS seriesId,
-  task.due_date AS dueDate, s.frequency, s.active AS seriesActive,
+  task.due_date AS dueDate, task.notes, task.remind_at AS remindAt, s.frequency, s.active AS seriesActive,
   (SELECT COUNT(*) FROM task m
     WHERE m.series_id = task.series_id AND m.completion_status = 'skipped'
       AND m.due_date < task.due_date
@@ -45,7 +45,7 @@ export const useTaskStore = create((set, get) => ({
     );
     set({ pending, completedToday, series: listActiveSeries(), loaded: true });
   },
-  addTask: ({ title, monetaryValue, effortRating, source = 'manual' }) => {
+  addTask: ({ title, monetaryValue, effortRating, source = 'manual', notes = null, remindAt = null }) => {
     // Voice double-submission guard: skip an identical voice task from the last minute
     if (source === 'voice') {
       const dupe = sqlite.getFirstSync(
@@ -56,17 +56,17 @@ export const useTaskStore = create((set, get) => ({
       if (dupe) return;
     }
     sqlite.runSync(
-      `INSERT INTO task (title, monetary_value, effort_rating, source) VALUES (?, ?, ?, ?)`,
-      [title, monetaryValue, effortRating, source]
+      `INSERT INTO task (title, monetary_value, effort_rating, source, notes, remind_at) VALUES (?, ?, ?, ?, ?, ?)`,
+      [title, monetaryValue, effortRating, source, notes || null, remindAt || null]
     );
     get().load();
   },
   // Pending only — a credited task's value can't change without desyncing the pool
-  updateTask: (id, { title, monetaryValue, effortRating }) => {
+  updateTask: (id, { title, monetaryValue, effortRating, notes = null, remindAt = null }) => {
     sqlite.runSync(
-      `UPDATE task SET title = ?, monetary_value = ?, effort_rating = ?
+      `UPDATE task SET title = ?, monetary_value = ?, effort_rating = ?, notes = ?, remind_at = ?
        WHERE id = ? AND completion_status = 'pending'`,
-      [title, monetaryValue, effortRating, id]
+      [title, monetaryValue, effortRating, notes || null, remindAt || null, id]
     );
     get().load();
   },

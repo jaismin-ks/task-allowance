@@ -1,8 +1,9 @@
 // app/wishlist/new/details.js — S9 Add item: details. Always reachable — on scrape
 // success it's a review screen, on failure the manual form with the reason on top.
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useKeyboardInset } from '../../../components/useKeyboardInset';
 import { ItemFields, useItemForm } from '../../../components/ItemFields';
 import { AppText } from '../../../components/ui/AppText';
 import { Banner } from '../../../components/ui/Banner';
@@ -19,6 +20,7 @@ export default function AddItemDetailsScreen() {
   const colors = useColors();
   const styles = useStyles();
   const insets = useSafeAreaInsets();
+  const keyboardInset = useKeyboardInset();
   const navigation = useNavigation();
   const params = useLocalSearchParams();
   const currency = usePoolStore((s) => s.budget.currencyCode);
@@ -61,7 +63,7 @@ export default function AddItemDetailsScreen() {
   const failure = params.status === 'failed' ? SCRAPE_MESSAGES[params.reason] ?? FALLBACK_MESSAGE : null;
 
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} collapsable={false}>
+    <View style={[styles.flex, { paddingBottom: keyboardInset }]} collapsable={false}>
       <View style={{ paddingTop: Platform.OS === 'android' ? insets.top : 8 }}>
         <FlowHeader title="Add an item" step="STEP 2 OF 2" onClose={closeFlow} onBack={() => router.back()} />
       </View>
@@ -88,10 +90,10 @@ export default function AddItemDetailsScreen() {
 
         <ItemFields form={form} currency={currency} showGoalToggle currentGoalTitle={currentGoal?.title} />
       </ScrollView>
-      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+      <View style={[styles.footer, { paddingBottom: keyboardInset ? 12 : Math.max(insets.bottom, 16) }]}>
         <Button label="Add to wishlist" onPress={save} />
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

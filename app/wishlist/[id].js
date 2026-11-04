@@ -2,8 +2,9 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useKeyboardInset } from '../../components/useKeyboardInset';
 import { ItemFields, useItemForm } from '../../components/ItemFields';
 import { ItemImage } from '../../components/ItemImage';
 import { itemPriceText } from '../../components/WishlistCard';
@@ -201,22 +202,23 @@ export default function ItemDetailScreen() {
 function EditItem({ item, currency, onCancel, onSave }) {
   const styles = useStyles();
   const insets = useSafeAreaInsets();
+  const keyboardInset = useKeyboardInset();
   const form = useItemForm(item);
   const save = () => {
     const fields = form.submit();
     if (fields) onSave(fields);
   };
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} collapsable={false}>
+    <View style={[styles.flex, { paddingBottom: keyboardInset }]} collapsable={false}>
       <SheetHeader title="Edit item" onClose={onCancel} closeLabel="Cancel editing" />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <ItemFields form={form} currency={currency} />
       </ScrollView>
-      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+      <View style={[styles.footer, { paddingBottom: keyboardInset ? 12 : Math.max(insets.bottom, 16) }]}>
         <Button label="Save changes" onPress={save} />
         <Button label="Cancel" variant="ghost" onPress={onCancel} />
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

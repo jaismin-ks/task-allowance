@@ -23,6 +23,8 @@ export const task = sqliteTable('task', {
   taskPackId: text('task_pack_id'),
   seriesId: text('series_id'), // set when generated from a repeating task_series
   dueDate: text('due_date'), // local 'YYYY-MM-DD' of the occurrence (repeating tasks only)
+  notes: text('notes'), // optional description
+  remindAt: text('remind_at'), // optional local 'YYYY-MM-DDTHH:MM' for a notification
   completedAt: text('completed_at'),
   timestamp: text('timestamp').notNull().default(sql`(datetime('now'))`),
 }, (table) => [
@@ -41,6 +43,8 @@ export const taskSeries = sqliteTable('task_series', {
   frequency: text('frequency').notNull(), // 'daily' | 'weekly' | 'monthly'
   weekdays: text('weekdays'), // weekly: comma list, 0 = Sunday ("1,4" = Mon + Thu)
   monthDay: integer('month_day'), // monthly: 1–31, clamped to the month's last day
+  notes: text('notes'), // copied onto each occurrence
+  remindTime: text('remind_time'), // optional 'HH:MM': each occurrence reminds on its day
   startDate: text('start_date').notNull(), // local 'YYYY-MM-DD'
   lastGeneratedDate: text('last_generated_date'), // local 'YYYY-MM-DD'
   active: integer('active', { mode: 'boolean' }).notNull().default(true),

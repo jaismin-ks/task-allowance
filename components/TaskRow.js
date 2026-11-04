@@ -10,6 +10,7 @@ import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeabl
 import Animated, { FadeInDown, interpolate, LinearTransition, useAnimatedStyle } from 'react-native-reanimated';
 import { formatMoney, moneyToWords } from '../lib/format';
 import { dateKey, friendlyDate, parseDateKey } from '../lib/recurrence';
+import { describeReminder, parseRemindAt } from '../lib/taskReminder';
 import { useReducedMotion } from '../lib/prefs';
 import { radius } from '../theme/tokens';
 import { makeStyles, useColors } from '../theme/theme';
@@ -44,14 +45,19 @@ export function TaskRow({ task, currency, onComplete, onEdit, onDelete }) {
     : missedFrom
       ? `from ${friendlyDate(missedFrom)}`
       : null;
-  const detail = done ? null : [frequencyName, missedText].filter(Boolean).join(' · ') || null;
+  const repeatText = done ? null : [frequencyName, missedText].filter(Boolean).join(' · ') || null;
+  // Upcoming reminder: "Today, 6:00 PM" (past ones have fired; nothing to show)
+  const remindDate = done ? null : parseRemindAt(task.remindAt);
+  const reminderText = remindDate && remindDate > new Date() ? describeReminder(remindDate) : null;
+  const detail = repeatText || reminderText;
 
   const a11yLabel =
     `${task.title}, ${moneyToWords(task.monetaryValue, currency)}, ` +
     `effort ${task.effortRating} of 5, ${done ? 'done' : 'not done'}` +
     (repeats ? `, repeats ${repeats}` : '') +
     (missedFrom ? `, from ${friendlyDate(missedFrom)}` : '') +
-    (missedCount ? `, missed ${missedCount} ${missedCount === 1 ? 'time' : 'times'} before this` : '');
+    (missedCount ? `, missed ${missedCount} ${missedCount === 1 ? 'time' : 'times'} before this` : '') +
+    (reminderText ? `, reminder ${reminderText}` : '');
 
   return (
     <Animated.View
@@ -106,10 +112,22 @@ export function TaskRow({ task, currency, onComplete, onEdit, onDelete }) {
             </AppText>
             {detail && (
               <View style={styles.meta}>
-                {repeats && <Icon name="repeat" size={12} color={colors.textMuted} />}
-                <AppText variant="small" color={colors.textMuted} style={styles.flex}>
-                  {detail}
-                </AppText>
+                {repeatText && (
+                  <>
+                    {repeats && <Icon name="repeat" size={12} color={colors.textMuted} />}
+                    <AppText variant="small" color={colors.textMuted} style={styles.flexShrink}>
+                      {repeatText}
+                    </AppText>
+                  </>
+                )}
+                {reminderText && (
+                  <>
+                    <Icon name="bell" size={12} color={colors.textMuted} />
+                    <AppText variant="small" color={colors.textMuted} style={styles.flexShrink}>
+                      {reminderText}
+                    </AppText>
+                  </>
+                )}
               </View>
             )}
           </View>
@@ -182,6 +200,6 @@ const useStyles = makeStyles((colors) => ({
   body: { flex: 1, gap: 6 },
   struck: { textDecorationLine: 'line-through' },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  flex: { flexShrink: 1 },
+  flexShrink: { flexShrink: 1 },
   right: { marginLeft: 8, alignItems: 'flex-end', gap: 6 },
 }));

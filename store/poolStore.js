@@ -3,11 +3,12 @@ import { create } from 'zustand';
 import { sqlite } from '../db/client';
 import { getBudgetInfo } from '../db/operations/getBudgetInfo';
 import { getPriorityItemProgress } from '../db/operations/getProgress';
-import { getCompletionDays, getDailyEarnings } from '../db/operations/stats';
+import { getCompletionDays, getDailyEarnings, getDailyEffortPoints } from '../db/operations/stats';
 import { getProfile } from '../db/operations/userProfile';
 import { computeDailyCap } from '../lib/dailyCap';
 import { addDays, dateKey } from '../lib/recurrence';
 import { computeStreak, daysToGoal, recentDailyPace } from '../lib/stats';
+import { DEFAULT_POINTS_PER_DAY, usualPointsPerDay } from '../lib/valueSuggest';
 
 function getEarnedToday() {
   return (
@@ -30,6 +31,8 @@ export const usePoolStore = create((set) => ({
   // before today) so the suggestion and effort ranges stay steady all day.
   dailyCap: 0,
   tierRanges: [],
+  // Usual effort points completed per day — drives the automatic task value
+  pointsPerDay: DEFAULT_POINTS_PER_DAY,
   overAllowance: false,
   streak: { current: 0, best: 0, doneToday: false },
   // Days until the goal at the last two weeks' pace; null until there's enough history
@@ -52,6 +55,7 @@ export const usePoolStore = create((set) => ({
       tierRanges,
       overAllowance: budget.totalEarnedThisMonth >= budget.monthlyAllowanceCap,
       streak: computeStreak(getCompletionDays()),
+      pointsPerDay: usualPointsPerDay(getDailyEffortPoints(dateKey(addDays(new Date(), -14)))),
       goalEtaDays: progress?.price != null && !progress.reached ? daysToGoal(progress.remaining, pace) : null,
     });
   },

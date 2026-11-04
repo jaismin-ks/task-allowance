@@ -67,7 +67,7 @@ a "↻ DAILY" tag, "FROM THU OCT 8", "MISSED 2", and the value.
 | ✅ 3 | **Search and filter appear when they help**: a search icon in the "Today" header, with the full toolbar shown once there are 8+ tasks or a filter is on. | 1 row for most users | S |
 | ✅ 4 | **Simpler task rows**: title and value on line 1; line 2 only if there's something to say, muted not amber: "↻ Daily · missed 2". Effort as bars only, with no "EFFORT 2/5 · 20 MIN" text and no "VOICE". Screen-reader labels keep everything. | 2–4 items per row | S |
 | ✅ 5 | **"Repeating" becomes "Coming up"**: only repeating tasks with nothing on today's list, collapsed to one row ("3 repeating · next: Laundry, Thu") that expands. | Duplicate rows | S |
-| 6 | **Lighter Add task**: Repeat collapses to one row ("Repeat · Never ›") that opens the chips. Shorter helpers. | About 120pt of options | S |
+| ✅ 6 | **Lighter Add task** (done differently: value fills itself in; note / reminder / repeat behind "+" chips): Repeat collapses to one row ("Repeat · Never ›") that opens the chips. Shorter helpers. | About 120pt of options | S |
 | 7 | **Settings regroup** into Allowance · Reminders & feel (reminder, haptics, voice) · Appearance (theme, accent, motion) · Data · About. Drop the "Activity" and "Daily guide" rows; both are reachable from Tasks. | 2 groups, 2 rows | XS |
 | 8 | **Fewer capitals**: sentence case for captions inside cards and rows. Keep caps only for the date line and tags. | | XS |
 

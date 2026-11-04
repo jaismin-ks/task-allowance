@@ -3,6 +3,7 @@
 // Icons are decorative by default; the control that wraps them carries the label.
 import {
   ArrowRight,
+  Bell,
   Camera,
   ChartColumn,
   Check,
@@ -40,6 +41,7 @@ import { useColors } from '../../theme/theme';
 
 const ICONS = {
   'arrow-right': ArrowRight,
+  bell: Bell,
   camera: Camera,
   chart: ChartColumn,
   check: Check,

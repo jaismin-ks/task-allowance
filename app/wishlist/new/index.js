@@ -2,8 +2,9 @@
 import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useKeyboardInset } from '../../../components/useKeyboardInset';
 import { HiddenPageScraper } from '../../../components/HiddenPageScraper';
 import { AppText } from '../../../components/ui/AppText';
 import { Button } from '../../../components/ui/Button';
@@ -21,6 +22,7 @@ export default function AddItemLinkScreen() {
   const colors = useColors();
   const styles = useStyles();
   const insets = useSafeAreaInsets();
+  const keyboardInset = useKeyboardInset();
   const [url, setUrl] = useState('');
   const [error, setError] = useState(null);
   const [fetching, setFetching] = useState(false);
@@ -105,7 +107,7 @@ export default function AddItemLinkScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} collapsable={false}>
+    <View style={[styles.flex, { paddingBottom: keyboardInset }]} collapsable={false}>
       <View style={{ paddingTop: Platform.OS === 'android' ? insets.top : 8 }}>
         <FlowHeader title="Add an item" step="STEP 1 OF 2" onClose={() => router.back()} />
       </View>
@@ -147,7 +149,7 @@ export default function AddItemLinkScreen() {
           </AppText>
         )}
       </ScrollView>
-      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+      <View style={[styles.footer, { paddingBottom: keyboardInset ? 12 : Math.max(insets.bottom, 16) }]}>
         <Button label="Fetch details" loading={fetching} loadingLabel="Fetching…" arrow onPress={fetchDetails} />
         <Button
           label="Enter details manually"
@@ -172,7 +174,7 @@ export default function AddItemLinkScreen() {
           }}
         />
       )}
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

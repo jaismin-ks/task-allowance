@@ -15,6 +15,19 @@ export function getDailyEarnings(fromKey) {
   );
 }
 
+// Effort points completed per local day since `fromKey` (1:2:3:5:8 by effort),
+// for the automatic task value (lib/valueSuggest.js)
+export function getDailyEffortPoints(fromKey) {
+  return sqlite.getAllSync(
+    `SELECT date(completed_at, 'localtime') AS day,
+            SUM(CASE effort_rating WHEN 1 THEN 1 WHEN 2 THEN 2 WHEN 3 THEN 3 WHEN 4 THEN 5 ELSE 8 END) AS points
+     FROM task
+     WHERE completion_status = 'completed' AND date(completed_at, 'localtime') >= ?
+     GROUP BY day ORDER BY day`,
+    [fromKey]
+  );
+}
+
 // Every local day with at least one completion (for streaks)
 export function getCompletionDays() {
   return sqlite

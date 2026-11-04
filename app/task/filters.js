@@ -2,8 +2,9 @@
 // Changes apply live; the button shows how many tasks match right now.
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useKeyboardInset } from '../../components/useKeyboardInset';
 import { AppText } from '../../components/ui/AppText';
 import { Button } from '../../components/ui/Button';
 import { Chip } from '../../components/ui/Chip';
@@ -22,6 +23,7 @@ export default function TaskFiltersScreen() {
   const colors = useColors();
   const styles = useStyles();
   const insets = useSafeAreaInsets();
+  const keyboardInset = useKeyboardInset();
   const filters = useTaskFilters();
   const { sort, setSort, efforts, toggleEffort, minValue, maxValue, setValueRange, resetFilters } = filters;
   const { pending, completedToday } = useTaskStore();
@@ -52,7 +54,7 @@ export default function TaskFiltersScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} collapsable={false}>
+    <View style={[styles.flex, { paddingBottom: keyboardInset }]} collapsable={false}>
       <SheetHeader title="Sort & filter" onClose={() => router.back()} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.group}>
@@ -133,14 +135,14 @@ export default function TaskFiltersScreen() {
         </View>
       </ScrollView>
 
-      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+      <View style={[styles.footer, { paddingBottom: keyboardInset ? 12 : Math.max(insets.bottom, 16) }]}>
         <Button
           label={matches === 0 ? 'No tasks match' : `Show ${matches} ${matches === 1 ? 'task' : 'tasks'}`}
           onPress={() => router.back()}
         />
         <Button label="Reset" variant="ghost" onPress={reset} />
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

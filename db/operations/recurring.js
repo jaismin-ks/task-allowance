@@ -17,7 +17,7 @@ const BACKFILL_DAYS = 31;
 export const SKIPPED = 'skipped';
 
 const SERIES_SELECT = `SELECT id, title, monetary_value AS monetaryValue, effort_rating AS effortRating,
-  source, frequency, weekdays, month_day AS monthDay, start_date AS startDate,
+  source, frequency, weekdays, month_day AS monthDay, start_date AS startDate, notes, remind_time AS remindTime,
   last_generated_date AS lastGeneratedDate, active FROM task_series`;
 
 const ruleColumns = (rule) => [
@@ -26,11 +26,24 @@ const ruleColumns = (rule) => [
   rule.frequency === 'monthly' ? rule.monthDay : null,
 ];
 
+// A series' reminder time lands on each occurrence's own day: '2026-11-04T18:00'
+const remindAtFor = (dueKey, remindTime) => (remindTime ? `${dueKey}T${remindTime}` : null);
+
 function insertOccurrence(series, dueKey, status) {
   sqlite.runSync(
-    `INSERT OR IGNORE INTO task (title, monetary_value, effort_rating, source, series_id, due_date, completion_status)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [series.title, series.monetaryValue, series.effortRating, series.source, series.id, dueKey, status]
+    `INSERT OR IGNORE INTO task (title, monetary_value, effort_rating, source, series_id, due_date, completion_status, notes, remind_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      series.title,
+      series.monetaryValue,
+      series.effortRating,
+      series.source,
+      series.id,
+      dueKey,
+      status,
+      series.notes ?? null,
+      status === 'pending' ? remindAtFor(dueKey, series.remindTime) : null,
+    ]
   );
 }
 
@@ -75,19 +88,24 @@ export function generateDueOccurrences(today = new Date()) {
 // New repeating task, starting today. With `attachTaskId` (turning an existing
 // one-off task into a repeating one), that task becomes today's occurrence when
 // today matches the rule, so it isn't duplicated.
-export function createSeries({ title, monetaryValue, effortRating, source = 'manual' }, rule, { attachTaskId } = {}) {
+export function createSeries(
+  { title, monetaryValue, effortRating, source = 'manual', notes = null, remindTime = null },
+  rule,
+  { attachTaskId } = {}
+) {
   const todayKey = dateKey();
   let id;
   sqlite.withTransactionSync(() => {
     id = sqlite.getFirstSync(
-      `INSERT INTO task_series (title, monetary_value, effort_rating, source, frequency, weekdays, month_day, start_date)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
-      [title, monetaryValue, effortRating, source, ...ruleColumns(rule), todayKey]
+      `INSERT INTO task_series (title, monetary_value, effort_rating, source, frequency, weekdays, month_day, start_date, notes, remind_time)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+      [title, monetaryValue, effortRating, source, ...ruleColumns(rule), todayKey, notes || null, remindTime || null]
     ).id;
     if (attachTaskId && matchesRule(rule, parseDateKey(todayKey))) {
       sqlite.runSync(
-        `UPDATE task SET series_id = ?, due_date = ? WHERE id = ? AND completion_status = 'pending'`,
-        [id, todayKey, attachTaskId]
+        `UPDATE task SET series_id = ?, due_date = ?, notes = ?, remind_at = ?
+         WHERE id = ? AND completion_status = 'pending'`,
+        [id, todayKey, notes || null, remindAtFor(todayKey, remindTime), attachTaskId]
       );
     }
   });
@@ -97,17 +115,23 @@ export function createSeries({ title, monetaryValue, effortRating, source = 'man
 
 // "This and future ones": update the template and rule, plus pending occurrences
 // due on/after `fromKey`. Completed occurrences are never touched (already credited).
-export function updateSeries(seriesId, { title, monetaryValue, effortRating }, rule, { fromKey = dateKey() } = {}) {
+export function updateSeries(
+  seriesId,
+  { title, monetaryValue, effortRating, notes = null, remindTime = null },
+  rule,
+  { fromKey = dateKey() } = {}
+) {
   sqlite.withTransactionSync(() => {
     sqlite.runSync(
       `UPDATE task_series SET title = ?, monetary_value = ?, effort_rating = ?,
-         frequency = ?, weekdays = ?, month_day = ? WHERE id = ?`,
-      [title, monetaryValue, effortRating, ...ruleColumns(rule), seriesId]
+         frequency = ?, weekdays = ?, month_day = ?, notes = ?, remind_time = ? WHERE id = ?`,
+      [title, monetaryValue, effortRating, ...ruleColumns(rule), notes || null, remindTime || null, seriesId]
     );
     sqlite.runSync(
-      `UPDATE task SET title = ?, monetary_value = ?, effort_rating = ?
+      `UPDATE task SET title = ?, monetary_value = ?, effort_rating = ?, notes = ?,
+         remind_at = CASE WHEN ? IS NULL THEN NULL ELSE due_date || 'T' || ? END
        WHERE series_id = ? AND completion_status = 'pending' AND due_date >= ?`,
-      [title, monetaryValue, effortRating, seriesId, fromKey]
+      [title, monetaryValue, effortRating, notes || null, remindTime || null, remindTime || null, seriesId, fromKey]
     );
   });
 }

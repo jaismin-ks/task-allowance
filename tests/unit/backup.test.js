@@ -274,7 +274,10 @@ describe('parseBackup', () => {
     const text = JSON.stringify(serializeBackup({ rows: sampleRows(), photos, exportedAt: EXPORTED_AT }));
     const result = parseBackup(text);
     expect(result.ok).toBe(true);
-    expect(result.backup.data.task_series).toEqual(sampleRows().task_series);
+    // Sample rows predate notes/reminders: those columns come back as null
+    expect(result.backup.data.task_series).toEqual(
+      sampleRows().task_series.map((r) => ({ notes: null, remind_time: null, ...r }))
+    );
   });
 
   test.each([
