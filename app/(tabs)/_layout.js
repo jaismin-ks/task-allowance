@@ -1,5 +1,5 @@
 // app/(tabs)/_layout.js — custom floating tab bar
-import Tabs from 'expo-router/js-tabs';
+import { Tabs } from 'expo-router/js-tabs';
 import { TabBar } from '../../components/TabBar';
 import { useColors } from '../../theme/theme';
 

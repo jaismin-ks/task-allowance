@@ -1,7 +1,7 @@
 # TaskAllowance
 
 Earn your wishlist. Give tasks a value, check them off, and watch your goal fill up.
-Offline-first iOS + Android app built with Expo (SDK 57), Expo Router, SQLite (Drizzle) and Zustand.
+Offline-first iOS + Android app built with Expo (SDK 58), Expo Router, SQLite (Drizzle) and Zustand.
 
 - **Tasks:** one-off or repeating, valued by effort (1–5) with a soft *Daily guide* so a month lands on budget.
 - **Wishlist:** paste a product link to auto-fill it, or type it in. One item is the *goal*.
