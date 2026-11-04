@@ -22,7 +22,9 @@ const TABS = {
 };
 const PAD = 6;
 
-export function TabBar({ state, navigation }) {
+// Expo Router 58 tab bar props: `emitter` fires tabPress (useScrollToTop listens
+// for it) and `navigateToTab` switches tabs. There's no `navigation` prop anymore.
+export function TabBar({ state, emitter, navigateToTab }) {
   const colors = useColors();
   const styles = useStyles();
   const { tabBarBottom } = useBottomChrome();
@@ -68,10 +70,10 @@ export function TabBar({ state, navigation }) {
         const fg = focused ? colors.onAccent : colors.textMuted;
 
         const onPress = () => {
-          const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+          const event = emitter.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
           if (!focused && !event.defaultPrevented) {
             haptic.selection();
-            navigation.navigate(route.name, route.params);
+            navigateToTab(route.key);
           }
           // Tapping the active tab: useScrollToTop in each screen handles the tabPress event
         };
