@@ -2,9 +2,11 @@
 // G2 — global Undo snackbar + toasts, floating above the tab bar and composer.
 // The 5s Undo window is held open while a screen reader is running, since we
 // can't detect VoiceOver focus directly (spec §7 "Time limits").
+import { usePathname } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Pressable, View } from 'react-native';
-import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { Easing, FadeIn, FadeInDown, FadeOut, FadeOutDown } from 'react-native-reanimated';
 import { useReducedMotion } from '../lib/prefs';
 import { useUiStore } from '../store/uiStore';
 import { durations } from '../theme/motion';
@@ -19,7 +21,13 @@ export function OverlayHost() {
   const colors = useColors();
   const styles = useStyles();
   const { snackbar, toast, hideSnackbar, hideToast } = useUiStore();
-  const { composerTop } = useBottomChrome();
+  const { composerTop, tabBarTop } = useBottomChrome();
+  const insets = useSafeAreaInsets();
+  const pathname = usePathname();
+  // Sit just above whatever chrome this screen has: composer + tab bar on Tasks,
+  // tab bar on Wishlist, nothing elsewhere (Profile & settings, sheets)
+  const bottom =
+    pathname === '/tasks' ? composerTop + 12 : pathname === '/wishlist' ? tabBarTop + 12 : Math.max(insets.bottom, 16) + 8;
   const reduced = useReducedMotion();
   const [screenReader, setScreenReader] = useState(false);
 
@@ -46,11 +54,15 @@ export function OverlayHost() {
     return () => clearTimeout(t);
   }, [toast, hideToast]);
 
-  const entering = reduced ? FadeIn.duration(150) : SlideInDown.springify().damping(18);
-  const exiting = reduced ? FadeOut.duration(150) : SlideOutDown.duration(180);
+  // Calm: fade in while rising 25pt, no spring. (SlideInDown launched the bar from the
+  // bottom of the screen on a spring, so it overshot and bounced on every toast.)
+  const entering = reduced
+    ? FadeIn.duration(150)
+    : FadeInDown.duration(220).easing(Easing.out(Easing.cubic));
+  const exiting = reduced ? FadeOut.duration(150) : FadeOutDown.duration(160).easing(Easing.in(Easing.cubic));
 
   return (
-    <View pointerEvents="box-none" style={[styles.host, { bottom: composerTop + 12 }]}>
+    <View pointerEvents="box-none" style={[styles.host, { bottom }]}>
       {toast && !snackbar && (
         <Animated.View key={`t${toast.id}`} entering={entering} exiting={exiting} style={styles.bar}>
           <AppText variant="label" style={styles.flex}>
