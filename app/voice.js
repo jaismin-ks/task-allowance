@@ -56,8 +56,8 @@ export default function VoiceScreen() {
         {voice.phase === 'listening' ? (
           <View style={styles.status} accessibilityLiveRegion="polite">
             <View style={styles.dot} />
-            <AppText variant="caption" color={colors.text}>
-              LISTENING · {mins}:{secs}
+            <AppText variant="small" color={colors.text}>
+              Listening · {mins}:{secs}
             </AppText>
           </View>
         ) : (
@@ -99,7 +99,7 @@ export default function VoiceScreen() {
       ) : voice.phase === 'review' ? (
         <View style={styles.reviewWrap}>
           <View style={styles.card}>
-            <AppText variant="caption" color={colors.textMuted}>WE HEARD</AppText>
+            <AppText variant="small" color={colors.textMuted}>We heard</AppText>
             <AppText variant="h1">{voice.transcript}</AppText>
           </View>
           <View style={styles.actions}>

@@ -127,7 +127,7 @@ export default function ItemDetailScreen() {
           )}
           {item.purchasedAt && (
             <AppText variant="caption" color={colors.textMuted}>
-              GOT IT · {new Date(item.purchasedAt.replace(' ', 'T') + 'Z').toLocaleDateString()}
+              Got it · {new Date(item.purchasedAt.replace(' ', 'T') + 'Z').toLocaleDateString()}
             </AppText>
           )}
           <AppText variant="h1">{item.title}</AppText>
@@ -167,8 +167,8 @@ export default function ItemDetailScreen() {
                     text: `${formatMoney(goalProgress.available, currency)} of ${formatMoney(goalProgress.price, currency)}`,
                   }}
                 />
-                <AppText variant="caption" color={colors.textMuted}>
-                  {Math.floor(goalProgress.percentage)}% · {formatMoney(goalProgress.remaining, currency)} TO GO
+                <AppText variant="small" color={colors.textMuted}>
+                  {Math.floor(goalProgress.percentage)}% · {formatMoney(goalProgress.remaining, currency)} to go
                 </AppText>
                 {eta && (
                   <AppText variant="small" color={colors.textMuted}>

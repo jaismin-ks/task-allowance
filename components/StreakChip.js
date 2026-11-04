@@ -16,8 +16,8 @@ export function StreakChip({ streak }) {
   return (
     <View style={styles.row} accessible accessibilityLabel={`${streak.current}-day streak`}>
       <Icon name="flame" size={13} color={colors.accentText} strokeWidth={2} />
-      <AppText variant="caption" color={colors.accentText} maxFontSizeMultiplier={1.3}>
-        {streak.current}-DAY STREAK
+      <AppText variant="small" color={colors.accentText} maxFontSizeMultiplier={1.3}>
+        {streak.current}-day streak
       </AppText>
     </View>
   );

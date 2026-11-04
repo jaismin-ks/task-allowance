@@ -98,7 +98,7 @@ export function WishlistGoalCard({ item, progress, currency }) {
               }}
             />
             <AppText variant="caption" color={colors.textMuted}>
-              {formatMoney(progress.remaining, currency)} TO GO
+              {formatMoney(progress.remaining, currency)} to go
             </AppText>
           </>
         )}

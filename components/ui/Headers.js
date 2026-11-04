@@ -55,7 +55,7 @@ export function FlowHeader({ title, step, onClose, onBack }) {
           {title}
         </AppText>
         {step && (
-          <AppText variant="caption" color={colors.textMuted}>
+          <AppText variant="small" color={colors.textMuted}>
             {step}
           </AppText>
         )}

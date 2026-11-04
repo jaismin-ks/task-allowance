@@ -65,7 +65,7 @@ export default function AddItemDetailsScreen() {
   return (
     <View style={[styles.flex, { paddingBottom: keyboardInset }]} collapsable={false}>
       <View style={{ paddingTop: Platform.OS === 'android' ? insets.top : 8 }}>
-        <FlowHeader title="Add an item" step="STEP 2 OF 2" onClose={closeFlow} onBack={() => router.back()} />
+        <FlowHeader title="Add an item" step="Step 2 of 2" onClose={closeFlow} onBack={() => router.back()} />
       </View>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.intro}>

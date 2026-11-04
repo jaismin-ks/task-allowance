@@ -58,7 +58,7 @@ a "↻ DAILY" tag, "FROM THU OCT 8", "MISSED 2", and the value.
 
 ## Recommendations (in priority order)
 
-1–5 shipped Nov 4 (calm Tasks screen). 6–8 are next.
+All eight shipped Nov 4.
 
 | # | Change | Removes | Effort |
 | --- | --- | --- | --- |
@@ -68,8 +68,8 @@ a "↻ DAILY" tag, "FROM THU OCT 8", "MISSED 2", and the value.
 | ✅ 4 | **Simpler task rows**: title and value on line 1; line 2 only if there's something to say, muted not amber: "↻ Daily · missed 2". Effort as bars only, with no "EFFORT 2/5 · 20 MIN" text and no "VOICE". Screen-reader labels keep everything. | 2–4 items per row | S |
 | ✅ 5 | **"Repeating" becomes "Coming up"**: only repeating tasks with nothing on today's list, collapsed to one row ("3 repeating · next: Laundry, Thu") that expands. | Duplicate rows | S |
 | ✅ 6 | **Lighter Add task** (done differently: value fills itself in; note / reminder / repeat behind "+" chips): Repeat collapses to one row ("Repeat · Never ›") that opens the chips. Shorter helpers. | About 120pt of options | S |
-| 7 | **Settings regroup** into Allowance · Reminders & feel (reminder, haptics, voice) · Appearance (theme, accent, motion) · Data · About. Drop the "Activity" and "Daily guide" rows; both are reachable from Tasks. | 2 groups, 2 rows | XS |
-| 8 | **Fewer capitals**: sentence case for captions inside cards and rows. Keep caps only for the date line and tags. | | XS |
+| ✅ 7 | **Settings regroup** into Allowance · Reminders & feel (reminder, haptics, voice) · Appearance (theme, accent, motion) · Data · About. Drop the "Activity" and "Daily guide" rows; both are reachable from Tasks. | 2 groups, 2 rows | XS |
+| ✅ 8 | **Fewer capitals**: sentence case for captions inside cards and rows. Keep caps only for the date line and tags. | | XS |
 
 **Expected result for 1–5:** before the first task, about 6 elements and 3 numbers
 instead of about 16 and 9. One progress bar instead of two. The first task starts about

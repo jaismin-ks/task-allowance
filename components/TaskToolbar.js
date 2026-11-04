@@ -93,13 +93,13 @@ export function TaskToolbar({ shown, total, autoFocus = false, onDismiss }) {
       {(isFiltering(filters) || sorted) && (
         <View style={styles.summary}>
           <AppText
-            variant="caption"
+            variant="small"
             color={colors.textMuted}
             style={styles.flex}
             accessibilityLiveRegion="polite"
           >
-            {isFiltering(filters) ? `SHOWING ${shown} OF ${total}` : `SORTED · ${sortLabel.toUpperCase()}`}
-            {isFiltering(filters) && sorted ? ` · ${sortLabel.toUpperCase()}` : ''}
+            {isFiltering(filters) ? `Showing ${shown} of ${total}` : `Sorted · ${sortLabel}`}
+            {isFiltering(filters) && sorted ? ` · ${sortLabel}` : ''}
           </AppText>
           <Pressable onPress={clearAll} accessibilityRole="button" accessibilityLabel="Clear search, filters and sort" style={styles.clearAll}>
             <AppText variant="label" color={colors.accentText}>Clear all</AppText>

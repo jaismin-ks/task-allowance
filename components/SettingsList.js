@@ -10,8 +10,8 @@ export function SettingsGroup({ title, children, footer }) {
   const styles = useStyles();
   return (
     <View style={styles.group}>
-      <AppText variant="caption" color={colors.textMuted} style={styles.groupTitle} accessibilityRole="header">
-        {title.toUpperCase()}
+      <AppText variant="label" color={colors.textMuted} style={styles.groupTitle} accessibilityRole="header">
+        {title}
       </AppText>
       <View style={styles.card}>{children}</View>
       {footer && (

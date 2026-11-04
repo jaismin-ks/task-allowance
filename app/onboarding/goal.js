@@ -35,7 +35,7 @@ export default function OnboardingGoal() {
       </View>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.hero}>
-          <AppText variant="caption" color={colors.accentText}>STEP 2 OF 2</AppText>
+          <AppText variant="small" color={colors.accentText}>Step 2 of 2</AppText>
           <AppText variant="h1" accessibilityRole="header">What are you saving for?</AppText>
           <AppText variant="body" color={colors.textMuted}>
             Add one thing you want. Every task you finish moves you closer to it.

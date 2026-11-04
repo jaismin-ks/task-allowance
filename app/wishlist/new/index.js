@@ -109,7 +109,7 @@ export default function AddItemLinkScreen() {
   return (
     <View style={[styles.flex, { paddingBottom: keyboardInset }]} collapsable={false}>
       <View style={{ paddingTop: Platform.OS === 'android' ? insets.top : 8 }}>
-        <FlowHeader title="Add an item" step="STEP 1 OF 2" onClose={() => router.back()} />
+        <FlowHeader title="Add an item" step="Step 1 of 2" onClose={() => router.back()} />
       </View>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <AppText variant="h1" accessibilityRole="header">Add an item</AppText>

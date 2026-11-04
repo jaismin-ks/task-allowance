@@ -62,7 +62,7 @@ export function GoalCard({ progress, currency, hasWishlistItems, earnedToday = 0
         accessibilityRole="button"
         accessibilityLabel={`Saving for ${progress.itemTitle}. Add a price to track progress`}
       >
-        <AppText variant="caption" color={colors.textMuted}>SAVING FOR</AppText>
+        <AppText variant="small" color={colors.textMuted}>Saving for</AppText>
         <AppText variant="h2">{progress.itemTitle}</AppText>
         <View style={styles.inline}>
           <Icon name="pencil" size={16} color={colors.warning} />
@@ -94,7 +94,7 @@ export function GoalCard({ progress, currency, hasWishlistItems, earnedToday = 0
       accessibilityHint="Opens item details"
     >
       <View style={styles.headRow}>
-        <AppText variant="caption" color={colors.textMuted}>SAVING FOR</AppText>
+        <AppText variant="small" color={colors.textMuted}>Saving for</AppText>
         {progress.reached && (
           <View style={styles.readyTag}>
             <Icon name="check" size={12} color={colors.onAccent} strokeWidth={2.5} />

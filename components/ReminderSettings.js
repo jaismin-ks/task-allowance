@@ -15,7 +15,8 @@ import { SettingsRow } from './SettingsList';
 import { Banner } from './ui/Banner';
 import { Toggle } from './ui/Toggle';
 
-export function ReminderSettings() {
+// `isLast`: whether these rows end their settings group (drives the dividers)
+export function ReminderSettings({ isLast = true }) {
   const colors = useColors();
   const styles = useStyles();
   const { reminder, setReminder, reminderTime, setReminderTime } = usePrefs();
@@ -75,7 +76,7 @@ export function ReminderSettings() {
             ? `Every day at ${shown}, with what’s left to earn. Quiet once you’re done for the day.`
             : 'A nudge at a time you pick, with what’s left to earn.'
         }
-        last={!reminder && !blocked}
+        last={isLast && !reminder && !blocked}
         right={
           <Toggle
             value={reminder && !blocked}
@@ -90,7 +91,7 @@ export function ReminderSettings() {
         Platform.OS === 'ios' ? (
           <SettingsRow
             label="Time"
-            last
+            last={isLast}
             right={
               <DateTimePicker
                 mode="time"
@@ -107,7 +108,7 @@ export function ReminderSettings() {
           <SettingsRow
             label="Time"
             value={shown}
-            last
+            last={isLast}
             accessibilityLabel={`Reminder time, ${shown}`}
             onPress={() =>
               DateTimePickerAndroid.open({ value: asDate, mode: 'time', onValueChange: (_, date) => pickTime(date) })

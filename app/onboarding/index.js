@@ -56,7 +56,7 @@ export default function OnboardingAllowance() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.hero}>
-          <AppText variant="caption" color={colors.accentText}>STEP 1 OF 2</AppText>
+          <AppText variant="small" color={colors.accentText}>Step 1 of 2</AppText>
           <AppText variant="displayXL" accessibilityRole="header">Earn the things you want.</AppText>
           <AppText variant="displayItalic" color={colors.textMuted} style={styles.tagline}>
             A guilt-free allowance, paid in effort.

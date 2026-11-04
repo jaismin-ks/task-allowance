@@ -35,7 +35,7 @@ function Tile({ icon, label, value, sub, a11y, children }) {
     <View style={styles.tile} accessible accessibilityLabel={a11y}>
       <View style={styles.tileHead}>
         <Icon name={icon} size={16} color={colors.accentText} />
-        <AppText variant="caption" color={colors.textMuted}>{label}</AppText>
+        <AppText variant="small" color={colors.textMuted}>{label}</AppText>
       </View>
       <AppText variant="numeric" style={styles.tileValue} numberOfLines={1} adjustsFontSizeToFit>
         {value}
@@ -82,7 +82,7 @@ export default function ActivityScreen() {
         <View style={styles.tiles}>
           <Tile
             icon="chart"
-            label={monthName().toUpperCase()}
+            label={monthName()}
             value={money(budget.totalEarnedThisMonth)}
             sub={`of ${money(cap, { trim: true })} allowance`}
             a11y={`${monthName()}: ${moneyToWords(budget.totalEarnedThisMonth, currency)} earned of ${moneyToWords(cap, currency)} allowance`}
@@ -91,7 +91,7 @@ export default function ActivityScreen() {
           </Tile>
           <Tile
             icon="flame"
-            label="STREAK"
+            label="Streak"
             value={`${streak.current} ${streak.current === 1 ? 'day' : 'days'}`}
             sub={
               streak.current > 0 && !streak.doneToday
@@ -102,14 +102,14 @@ export default function ActivityScreen() {
           />
           <Tile
             icon="checklist"
-            label="ALL TIME"
+            label="All time"
             value={money(lifetime.earned)}
             sub={`${lifetime.tasksCompleted} ${lifetime.tasksCompleted === 1 ? 'task' : 'tasks'} done`}
             a11y={`All time: ${moneyToWords(lifetime.earned, currency)} earned from ${lifetime.tasksCompleted} tasks`}
           />
           <Tile
             icon="trophy"
-            label="GOALS REACHED"
+            label="Goals reached"
             value={String(lifetime.goalsReached)}
             sub={lifetime.spent > 0 ? `${money(lifetime.spent)} spent on them` : 'Your first is on its way'}
             a11y={`Goals reached: ${lifetime.goalsReached}`}

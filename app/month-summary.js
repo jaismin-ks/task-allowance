@@ -27,7 +27,7 @@ export default function MonthSummaryScreen() {
 
   return (
     <View style={[styles.wrap, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-      <AppText variant="caption" color={colors.textMuted}>MONTH CLOSED</AppText>
+      <AppText variant="small" color={colors.textMuted}>Month closed</AppText>
       <AppText variant="displayL" accessibilityRole="header">
         {closedMonth} <AppText variant="displayL" style={styles.italic}>wrap-up</AppText>
       </AppText>
@@ -40,7 +40,7 @@ export default function MonthSummaryScreen() {
           </AppText>
           {summary.cap > 0 && <ProgressBar percentage={(summary.earned / summary.cap) * 100} height={6} />}
           <AppText variant="caption" color={colors.textMuted}>
-            {summary.tasksCompleted} {summary.tasksCompleted === 1 ? 'TASK' : 'TASKS'} COMPLETED
+            {summary.tasksCompleted} {summary.tasksCompleted === 1 ? 'task' : 'tasks'} completed
           </AppText>
         </View>
       )}

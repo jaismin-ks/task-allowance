@@ -24,8 +24,8 @@ export function WeekChart({ days, currency, guide }) {
   return (
     <View style={styles.wrap}>
       <View style={styles.readout} accessibilityLiveRegion="polite">
-        <AppText variant="caption" color={colors.textMuted}>
-          {isToday ? 'TODAY' : friendlyDate(pick.date).toUpperCase()}
+        <AppText variant="small" color={colors.textMuted}>
+          {isToday ? 'Today' : friendlyDate(pick.date)}
         </AppText>
         <AppText variant="numeric">
           {formatMoney(pick.earned, currency)}

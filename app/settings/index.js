@@ -24,7 +24,7 @@ import { resetAllData } from '../../db/operations/wishlist';
 import { RESTORE_ERRORS, summarizeBackup } from '../../lib/backup';
 import { exportBackup, pickBackup, restoreBackup } from '../../lib/backupFile';
 import { runCompletionIntegrityCheck } from '../../lib/devChecks';
-import { formatMoney } from '../../lib/format';
+import { formatMoney, monthName } from '../../lib/format';
 import { deleteAllItemPhotos } from '../../lib/itemPhotos';
 import { flags, usePrefs } from '../../lib/prefs';
 import { DEFAULT_REMINDER_TIME } from '../../lib/reminderPlan';
@@ -218,15 +218,43 @@ export default function SettingsScreen() {
           <SettingsRow
             label="Monthly allowance"
             value={formatMoney(budget.monthlyAllowanceCap, currency, { trim: true })}
+            helper={`About ${formatMoney(dailyCap, currency)} a day for the rest of ${monthName()}. A guide, never a limit.`}
+            accessibilityLabel={`Monthly allowance, ${formatMoney(budget.monthlyAllowanceCap, currency, { trim: true })}. About ${formatMoney(dailyCap, currency)} a day for the rest of ${monthName()}. A guide, never a limit.`}
             onPress={() => router.push('/settings/allowance')}
           />
-          <SettingsRow label="Currency" value={currency} onPress={() => router.push('/settings/currency')} />
+          <SettingsRow label="Currency" value={currency} onPress={() => router.push('/settings/currency')} last />
+        </SettingsGroup>
+
+        <SettingsGroup title="Reminders & feel">
+          <ReminderSettings isLast={false} />
           <SettingsRow
-            label="Daily guide"
-            value={`≈ ${formatMoney(dailyCap, currency)} today`}
-            helper="A suggestion, never a limit."
-            accessibilityLabel={`Daily guide, about ${formatMoney(dailyCap, currency)} today. A suggestion, never a limit.`}
+            label="Haptics"
+            helper="Vibrate when you complete tasks."
+            right={
+              <Toggle
+                value={haptics}
+                onValueChange={setHaptics}
+                accessibilityLabel="Haptics"
+                accessibilityHint="Vibrate when you complete tasks."
+              />
+            }
+          />
+          <SettingsRow
+            label="Voice input"
+            helper={isVoiceSupported ? 'Speak tasks instead of typing.' : 'Needs a development build of the app.'}
             last
+            right={
+              <Toggle
+                value={!!profile?.voiceInputEnabled && isVoiceSupported}
+                disabled={!isVoiceSupported}
+                onValueChange={(v) => {
+                  updateProfile({ voiceInputEnabled: v });
+                  refresh();
+                }}
+                accessibilityLabel="Voice input"
+                accessibilityHint="Speak tasks instead of typing."
+              />
+            }
           />
         </SettingsGroup>
 
@@ -252,38 +280,7 @@ export default function SettingsScreen() {
               Used for money, progress and buttons. Works in light and dark.
             </AppText>
           </View>
-        </SettingsGroup>
-
-        <SettingsGroup title="Preferences">
-          <SettingsRow
-            label="Voice input"
-            helper={isVoiceSupported ? 'Speak tasks instead of typing.' : 'Needs a development build of the app.'}
-            right={
-              <Toggle
-                value={!!profile?.voiceInputEnabled && isVoiceSupported}
-                disabled={!isVoiceSupported}
-                onValueChange={(v) => {
-                  updateProfile({ voiceInputEnabled: v });
-                  refresh();
-                }}
-                accessibilityLabel="Voice input"
-                accessibilityHint="Speak tasks instead of typing."
-              />
-            }
-          />
-          <SettingsRow
-            label="Haptics"
-            helper="Vibrate when you complete tasks."
-            right={
-              <Toggle
-                value={haptics}
-                onValueChange={setHaptics}
-                accessibilityLabel="Haptics"
-                accessibilityHint="Vibrate when you complete tasks."
-              />
-            }
-          />
-          <View style={styles.motion}>
+          <View style={[styles.motion, styles.topDivider]}>
             <AppText variant="label">Motion</AppText>
             <View style={styles.chips} accessibilityRole="radiogroup" accessibilityLabel="Motion">
               {MOTION_OPTIONS.map(([key, label]) => (
@@ -297,10 +294,6 @@ export default function SettingsScreen() {
               ))}
             </View>
           </View>
-        </SettingsGroup>
-
-        <SettingsGroup title="Reminder">
-          <ReminderSettings />
         </SettingsGroup>
 
         <SettingsGroup
