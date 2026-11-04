@@ -25,9 +25,15 @@ export function IconButton({ icon, label, onPress, color, style, size: iconSize 
   );
 }
 
+// SHEET_ROOT: iOS form sheets (react-native-screens) look for a ScrollView among the
+// sheet's top-level native views and resize/position it themselves, assuming at most
+// [header, ScrollView]. Fabric flattens layout-only views (a KeyboardAvoidingView,
+// this header), which exposes the form's ScrollView and the header's text as loose
+// top-level views, and the ScrollView ends up drawn over the header. So every sheet
+// root is `collapsable={false}`, and headers are too.
 export function SheetHeader({ title, onClose, closeLabel = 'Close' }) {
   return (
-    <View style={styles.sheetHeader}>
+    <View style={styles.sheetHeader} collapsable={false}>
       <AppText variant="h2" accessibilityRole="header" style={styles.flex}>
         {title}
       </AppText>
@@ -39,7 +45,7 @@ export function SheetHeader({ title, onClose, closeLabel = 'Close' }) {
 export function FlowHeader({ title, step, onClose, onBack }) {
   const colors = useColors();
   return (
-    <View style={styles.flowHeader}>
+    <View style={styles.flowHeader} collapsable={false}>
       <View style={styles.flowSide}>
         <IconButton icon="close" label="Close" onPress={onClose} />
         {onBack && <IconButton icon="chevron-left" label="Back" onPress={onBack} />}

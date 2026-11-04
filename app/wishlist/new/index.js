@@ -105,7 +105,7 @@ export default function AddItemLinkScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} collapsable={false}>
       <View style={{ paddingTop: Platform.OS === 'android' ? insets.top : 8 }}>
         <FlowHeader title="Add an item" step="STEP 1 OF 2" onClose={() => router.back()} />
       </View>

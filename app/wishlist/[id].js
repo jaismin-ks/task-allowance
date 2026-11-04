@@ -110,7 +110,7 @@ export default function ItemDetailScreen() {
   }
 
   return (
-    <View style={styles.flex}>
+    <View style={styles.flex} collapsable={false}>
       <SheetHeader title="Item details" onClose={() => router.back()} />
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}>
         <ItemImage uri={item.imageUrl} title={item.title} style={styles.image} letterSize={72} />
@@ -200,7 +200,7 @@ function EditItem({ item, currency, onCancel, onSave }) {
     if (fields) onSave(fields);
   };
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} collapsable={false}>
       <SheetHeader title="Edit item" onClose={onCancel} closeLabel="Cancel editing" />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <ItemFields form={form} currency={currency} />

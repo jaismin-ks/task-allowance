@@ -61,7 +61,7 @@ export default function AddItemDetailsScreen() {
   const failure = params.status === 'failed' ? SCRAPE_MESSAGES[params.reason] ?? FALLBACK_MESSAGE : null;
 
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} collapsable={false}>
       <View style={{ paddingTop: Platform.OS === 'android' ? insets.top : 8 }}>
         <FlowHeader title="Add an item" step="STEP 2 OF 2" onClose={closeFlow} onBack={() => router.back()} />
       </View>

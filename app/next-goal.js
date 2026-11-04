@@ -36,7 +36,7 @@ export default function NextGoalScreen() {
   };
 
   return (
-    <View style={styles.flex}>
+    <View style={styles.flex} collapsable={false}>
       <SheetHeader title={mode === 'bought' ? 'What’s next?' : 'Pick a new goal'} onClose={() => router.back()} />
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}>
         {mode === 'bought' && (

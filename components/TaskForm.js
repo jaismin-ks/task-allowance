@@ -290,9 +290,11 @@ export function TaskForm({ task, series, initialTitle = '', initialSource = 'man
   const repeatNote = isOccurrence || series ? 'Schedule changes apply from today on.' : undefined;
 
   return (
+    // collapsable={false}: see SHEET_ROOT note in components/ui/Headers.js
     <KeyboardAvoidingView
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      collapsable={false}
     >
       <SheetHeader title={sheetTitle} onClose={() => router.back()} />
       <ScrollView
