@@ -33,9 +33,10 @@ theme with five accents, and an on-device scrape fallback.
 1. **Money drift, fixed.** Pool totals were float sums. Five tasks worth $10.00 added up
    to 9.999999999999998, so a $10 goal never triggered "Unlocked" and showed "$0.00 to go".
    Totals are now rounded to cents on write and read, and there are tests for it.
-2. **Missed repeats pile up.** A daily task that's ignored for a month backfills
-   31 pending copies. Suggest: when generating, mark older uncompleted occurrences of
-   the same series as skipped (or keep only the latest), with a "Missed 4 days" caption.
+2. **Missed repeats piled up, fixed.** A daily task ignored for a month left 31 pending
+   copies. Now only the newest occurrence is pending. A missed one carries forward
+   until the next is due, then becomes `skipped` (kept as history, never credited),
+   and the row says "MISSED 3".
 3. **Template placeholders shipped.** Expo icon/splash, `task-allowance-app` name, no
    Android package. Fixed.
 4. **Render crashes showed a blank screen.** Fixed with a root error boundary.
@@ -50,7 +51,7 @@ theme with five accents, and an on-device scrape fallback.
       back. Today, deleting the app loses all data.
 
 ### Phase B: product polish
-- [ ] Missed repeating tasks: collapse the backlog (bug 2)
+- [x] Missed repeating tasks: collapse the backlog (bug 2)
 - [ ] Optional daily reminder (local notification, on-device, no server): "3 tasks
       left today · $4.20 to earn". Off by default, with the time picked in Settings.
 - [ ] First-run hint on the Tasks screen (one dismissible card) explaining value →

@@ -26,12 +26,14 @@ export function TaskRow({ task, currency, onComplete, onEdit }) {
   // Repeating occurrences show how often, and missed ones show the day they were for
   const repeats = task.seriesId && task.frequency ? task.frequency : null;
   const missedFrom = !done && task.dueDate && task.dueDate < dateKey() ? parseDateKey(task.dueDate) : null;
+  const missedCount = !done && task.missedCount > 0 ? task.missedCount : 0;
 
   const a11yLabel =
     `${task.title}, ${moneyToWords(task.monetaryValue, currency)}, ` +
     `effort ${task.effortRating} of 5, ${done ? 'done' : 'not done'}` +
     (repeats ? `, repeats ${repeats}` : '') +
-    (missedFrom ? `, from ${friendlyDate(missedFrom)}` : '');
+    (missedFrom ? `, from ${friendlyDate(missedFrom)}` : '') +
+    (missedCount ? `, missed ${missedCount} ${missedCount === 1 ? 'time' : 'times'} before this` : '');
 
   return (
     <Animated.View
@@ -69,7 +71,7 @@ export function TaskRow({ task, currency, onComplete, onEdit }) {
               {task.source === 'voice' ? ' · VOICE' : ''}
             </AppText>
           </View>
-          {(repeats || missedFrom) && (
+          {(repeats || missedFrom || missedCount > 0) && (
             <View style={styles.meta}>
               {repeats && (
                 <View style={styles.repeatTag}>
@@ -79,6 +81,9 @@ export function TaskRow({ task, currency, onComplete, onEdit }) {
               )}
               {missedFrom && (
                 <AppText variant="caption" color={colors.warning}>FROM {shortDate(missedFrom)}</AppText>
+              )}
+              {missedCount > 0 && (
+                <AppText variant="caption" color={colors.warning}>MISSED {missedCount}</AppText>
               )}
             </View>
           )}

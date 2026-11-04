@@ -62,8 +62,13 @@ export default function TasksScreen() {
   useFocusEffect(refreshAll);
 
   const handleComplete = (task) => {
-    // Commit to the DB first so killing the app mid-animation can't lose the credit
-    completeTask(task.id);
+    // Commit to the DB first so killing the app mid-animation can't lose the credit.
+    // Nothing credited (e.g. a missed repeat skipped since the list was drawn) →
+    // just redraw; never claim "+$ earned".
+    if (!completeTask(task.id)) {
+      refreshAll();
+      return;
+    }
     haptic.complete();
     refreshAll();
 

@@ -1,13 +1,20 @@
 // db/operations/recurring.js
 // Repeating tasks. A task_series holds the template + rule; each due date gets an
 // ordinary `task` row (series_id + due_date), so completing / undo / pool math
-// don't change. Missed occurrences stay pending until done or deleted.
+// don't change.
+//
+// Only one occurrence per series is ever pending: the latest. A missed one stays
+// on the list (captioned "FROM MON OCT 5") until the next one comes due, then it's
+// marked 'skipped'. Skipped rows are kept as history — they're never credited,
+// never shown in the list, and they drive the "MISSED 3" caption.
 import { addDays, dateKey, matchesRule, parseDateKey, ruleFromSeries } from '../../lib/recurrence';
 import { sqlite } from '../client';
 
-// If the app isn't opened for a long stretch, only backfill this many days so
-// the list doesn't flood with months of missed daily tasks.
+// If the app isn't opened for a long stretch, only record this many days of
+// missed occurrences (they're history, not list items).
 const BACKFILL_DAYS = 31;
+
+export const SKIPPED = 'skipped';
 
 const SERIES_SELECT = `SELECT id, title, monetary_value AS monetaryValue, effort_rating AS effortRating,
   source, frequency, weekdays, month_day AS monthDay, start_date AS startDate,
@@ -19,11 +26,22 @@ const ruleColumns = (rule) => [
   rule.frequency === 'monthly' ? rule.monthDay : null,
 ];
 
-function insertOccurrence(series, dueKey) {
+function insertOccurrence(series, dueKey, status) {
   sqlite.runSync(
-    `INSERT OR IGNORE INTO task (title, monetary_value, effort_rating, source, series_id, due_date)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [series.title, series.monetaryValue, series.effortRating, series.source, series.id, dueKey]
+    `INSERT OR IGNORE INTO task (title, monetary_value, effort_rating, source, series_id, due_date, completion_status)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [series.title, series.monetaryValue, series.effortRating, series.source, series.id, dueKey, status]
+  );
+}
+
+// A pending occurrence is superseded once a later occurrence of the same series
+// exists (whatever its status). Also collapses backlogs created before this rule.
+function skipSupersededOccurrences() {
+  sqlite.runSync(
+    `UPDATE task SET completion_status = '${SKIPPED}'
+     WHERE completion_status = 'pending' AND series_id IS NOT NULL
+       AND EXISTS (SELECT 1 FROM task newer
+                   WHERE newer.series_id = task.series_id AND newer.due_date > task.due_date)`
   );
 }
 
@@ -35,7 +53,6 @@ export function generateDueOccurrences(today = new Date()) {
     `${SERIES_SELECT} WHERE active = 1 AND (last_generated_date IS NULL OR last_generated_date < ?)`,
     [todayKey]
   );
-  if (!due.length) return;
 
   const floor = addDays(today, -(BACKFILL_DAYS - 1));
   sqlite.withTransactionSync(() => {
@@ -43,11 +60,15 @@ export function generateDueOccurrences(today = new Date()) {
       const rule = ruleFromSeries(s);
       let d = s.lastGeneratedDate ? addDays(parseDateKey(s.lastGeneratedDate), 1) : parseDateKey(s.startDate);
       if (d < floor) d = floor;
+      const dates = [];
       for (; dateKey(d) <= todayKey; d = addDays(d, 1)) {
-        if (matchesRule(rule, d)) insertOccurrence(s, dateKey(d));
+        if (matchesRule(rule, d)) dates.push(dateKey(d));
       }
+      // Only the newest one goes on the list; earlier dates were already missed
+      dates.forEach((key, i) => insertOccurrence(s, key, i === dates.length - 1 ? 'pending' : SKIPPED));
       sqlite.runSync(`UPDATE task_series SET last_generated_date = ? WHERE id = ?`, [todayKey, s.id]);
     }
+    skipSupersededOccurrences();
   });
 }
 

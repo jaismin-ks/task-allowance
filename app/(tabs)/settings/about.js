@@ -15,6 +15,7 @@ const SECTIONS = [
     body: [
       'Add tasks and give each one a value. When you mark a task done, its value is added to what you’ve earned.',
       'Pick one wishlist item as your goal. Everything you’ve earned and haven’t spent counts toward it, and that carries over from month to month.',
+      'Repeating tasks show up on the days they’re due. If you miss one, it stays on your list until the next one is due, then it’s marked as missed — so a busy week never leaves you with a pile of old copies.',
       'Your monthly allowance is the most you want to earn in a month. The daily guide spreads what’s left across the remaining days. It’s a suggestion, never a limit — extra tasks always count.',
       'When you’ve earned enough, mark the item as bought and pick what’s next.',
     ],

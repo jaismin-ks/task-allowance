@@ -5,8 +5,11 @@ export function getCurrentMonthKey(date = new Date()) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
+// Returns true when it credited the pool. False means nothing changed: already
+// done, deleted, or a missed repeat that was skipped while its row was on screen.
 export function completeTask(taskId) {
   const monthKey = getCurrentMonthKey();
+  let credited = false;
 
   sqlite.withTransactionSync(() => {
     const rows = sqlite.getAllSync(
@@ -38,7 +41,9 @@ export function completeTask(taskId) {
       `UPDATE allowance_pool SET total_earned = ROUND(total_earned + ?, 2) WHERE month_key = ?`,
       [row.monetaryValue, monthKey]
     );
+    credited = true;
   });
+  return credited;
 }
 
 // Generous DB-side bound on the 5s Undo snackbar (it pauses under VoiceOver focus).
