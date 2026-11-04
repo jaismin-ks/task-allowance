@@ -18,7 +18,6 @@ import { Icon } from './ui/Icon';
 const TABS = {
   tasks: { label: 'Tasks', icon: 'checklist' },
   wishlist: { label: 'Wishlist', icon: 'gift' },
-  settings: { label: 'Settings', icon: 'sliders' },
 };
 const PAD = 6;
 

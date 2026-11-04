@@ -4,6 +4,7 @@ import { useCallback, useRef } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SCREEN_GUTTER, useBottomChrome } from '../../components/layout';
+import { ProfileButton } from '../../components/ProfileButton';
 import { WishlistCard, WishlistGoalCard } from '../../components/WishlistCard';
 import { AppText } from '../../components/ui/AppText';
 import { Banner } from '../../components/ui/Banner';
@@ -63,7 +64,10 @@ export default function WishlistScreen() {
     >
       <View style={styles.header}>
         <AppText variant="h1" accessibilityRole="header">Wishlist</AppText>
-        <Button label="Add" icon="plus" small variant="secondary" onPress={addItem} accessibilityLabel="Add an item" />
+        <View style={styles.headerRight}>
+          <Button label="Add" icon="plus" small variant="secondary" onPress={addItem} accessibilityLabel="Add an item" />
+          <ProfileButton />
+        </View>
       </View>
 
       {isEmpty ? (
@@ -100,6 +104,7 @@ const useStyles = makeStyles((colors) => ({
   screen: { flex: 1, backgroundColor: colors.bg },
   content: { paddingHorizontal: SCREEN_GUTTER, gap: 16 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 4, marginRight: -4 },
   grid: { gap: 12 },
   gridRow: { flexDirection: 'row', gap: 12 },
   flex: { flex: 1 },

@@ -33,6 +33,7 @@ import {
   Trash2,
   TriangleAlert,
   Trophy,
+  User,
   X,
 } from 'lucide-react-native';
 import { useColors } from '../../theme/theme';
@@ -69,6 +70,7 @@ const ICONS = {
   trash: Trash2,
   warning: TriangleAlert,
   trophy: Trophy,
+  user: User,
   close: X,
 };
 

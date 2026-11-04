@@ -1,35 +1,39 @@
-// app/(tabs)/settings/index.js — S12 Settings. Changes save immediately; no Save button here.
+// app/settings/index.js — Profile & settings (opened from the profile button, top right of
+// Tasks and Wishlist). You at the top, then settings. Changes save immediately.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
-import { router, useFocusEffect, useScrollToTop } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { SCREEN_GUTTER, useBottomChrome } from '../../../components/layout';
-import { AccentPicker } from '../../../components/AccentPicker';
-import { ReminderSettings } from '../../../components/ReminderSettings';
-import { ResetDataModal } from '../../../components/ResetDataModal';
-import { SettingsGroup, SettingsRow } from '../../../components/SettingsList';
-import { AppText } from '../../../components/ui/AppText';
-import { Button } from '../../../components/ui/Button';
-import { Chip } from '../../../components/ui/Chip';
-import { TextField } from '../../../components/ui/TextField';
-import { Toggle } from '../../../components/ui/Toggle';
-import { getProfile, updateProfile } from '../../../db/operations/userProfile';
-import { resetAllData } from '../../../db/operations/wishlist';
-import { RESTORE_ERRORS, summarizeBackup } from '../../../lib/backup';
-import { exportBackup, pickBackup, restoreBackup } from '../../../lib/backupFile';
-import { runCompletionIntegrityCheck } from '../../../lib/devChecks';
-import { formatMoney } from '../../../lib/format';
-import { deleteAllItemPhotos } from '../../../lib/itemPhotos';
-import { flags, usePrefs } from '../../../lib/prefs';
-import { DEFAULT_REMINDER_TIME } from '../../../lib/reminderPlan';
-import { isVoiceSupported } from '../../../lib/voiceInput';
-import { usePoolStore } from '../../../store/poolStore';
-import { showToast } from '../../../store/uiStore';
-import { useTaskStore } from '../../../store/taskStore';
-import { useWishlistStore } from '../../../store/wishlistStore';
-import { makeStyles, useColors } from '../../../theme/theme';
+import { SCREEN_GUTTER } from '../../components/layout';
+import { Avatar } from '../../components/ProfileButton';
+import { AccentPicker } from '../../components/AccentPicker';
+import { ReminderSettings } from '../../components/ReminderSettings';
+import { ResetDataModal } from '../../components/ResetDataModal';
+import { SettingsGroup, SettingsRow } from '../../components/SettingsList';
+import { AppText } from '../../components/ui/AppText';
+import { Button } from '../../components/ui/Button';
+import { Chip } from '../../components/ui/Chip';
+import { PushHeader } from '../../components/ui/Headers';
+import { TextField } from '../../components/ui/TextField';
+import { Toggle } from '../../components/ui/Toggle';
+import { getLifetimeStats } from '../../db/operations/stats';
+import { getProfile, updateProfile } from '../../db/operations/userProfile';
+import { resetAllData } from '../../db/operations/wishlist';
+import { RESTORE_ERRORS, summarizeBackup } from '../../lib/backup';
+import { exportBackup, pickBackup, restoreBackup } from '../../lib/backupFile';
+import { runCompletionIntegrityCheck } from '../../lib/devChecks';
+import { formatMoney } from '../../lib/format';
+import { deleteAllItemPhotos } from '../../lib/itemPhotos';
+import { flags, usePrefs } from '../../lib/prefs';
+import { DEFAULT_REMINDER_TIME } from '../../lib/reminderPlan';
+import { isVoiceSupported } from '../../lib/voiceInput';
+import { usePoolStore } from '../../store/poolStore';
+import { showToast } from '../../store/uiStore';
+import { useTaskStore } from '../../store/taskStore';
+import { useWishlistStore } from '../../store/wishlistStore';
+import { makeStyles, useColors } from '../../theme/theme';
 
 const APPEARANCE_OPTIONS = [
   ['system', 'Match system'],
@@ -47,11 +51,10 @@ export default function SettingsScreen() {
   const colors = useColors();
   const styles = useStyles();
   const insets = useSafeAreaInsets();
-  const { tabContentPadding } = useBottomChrome();
   const scrollRef = useRef(null);
-  useScrollToTop(scrollRef);
 
-  const { profile, budget, dailyCap, refresh } = usePoolStore();
+  const { profile, budget, dailyCap, streak, refresh } = usePoolStore();
+  const [lifetime, setLifetime] = useState(() => getLifetimeStats());
   const { haptics, setHaptics, motion, setMotion, appearance, setAppearance, accent, setAccent } = usePrefs();
   const [name, setName] = useState(() => {
     const current = usePoolStore.getState().profile?.displayName;
@@ -63,7 +66,12 @@ export default function SettingsScreen() {
   const [checkResults, setCheckResults] = useState(null);
   const currency = budget.currencyCode;
 
-  useFocusEffect(useCallback(() => refresh(), [refresh]));
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+      setLifetime(getLifetimeStats());
+    }, [refresh])
+  );
 
   const saveName = () => {
     updateProfile({ displayName: name.trim() || 'Me' });
@@ -162,20 +170,51 @@ export default function SettingsScreen() {
 
   return (
     <>
+      <View style={[styles.screen, { paddingTop: insets.top }]}>
+        <PushHeader title="Profile & settings" onBack={() => router.back()} />
       <ScrollView
         ref={scrollRef}
         style={styles.screen}
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + 16, paddingBottom: tabContentPadding }]}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
         keyboardShouldPersistTaps="handled"
       >
-        <AppText variant="h1" accessibilityRole="header">Settings</AppText>
+        {/* You: name + a one-line summary that opens Activity */}
+        <View style={styles.me}>
+          <Avatar name={profile?.displayName} size={64} />
+          <View style={styles.meText}>
+            <TextField
+              label="Your name"
+              optional
+              placeholder="What should we call you?"
+              helper="Used in your greeting."
+              value={name}
+              onChangeText={setName}
+              onBlur={saveName}
+              onSubmitEditing={saveName}
+              maxLength={30}
+              autoCapitalize="words"
+              returnKeyType="done"
+            />
+          </View>
+        </View>
+
+        <SettingsGroup title="Activity">
+          <SettingsRow
+            label={`${formatMoney(lifetime.earned, currency)} earned all time`}
+            helper={[
+              streak.current > 0 ? `${streak.current}-day streak` : null,
+              `${lifetime.tasksCompleted} ${lifetime.tasksCompleted === 1 ? 'task' : 'tasks'} done`,
+              lifetime.goalsReached ? `${lifetime.goalsReached} ${lifetime.goalsReached === 1 ? 'goal' : 'goals'} reached` : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+            onPress={() => router.push('/activity')}
+            accessibilityLabel={`Activity. ${formatMoney(lifetime.earned, currency)} earned all time. Opens your streak, history and totals.`}
+            last
+          />
+        </SettingsGroup>
 
         <SettingsGroup title="Allowance">
-          <SettingsRow
-            label="Activity"
-            helper="Your streak, history and totals."
-            onPress={() => router.push('/activity')}
-          />
           <SettingsRow
             label="Monthly allowance"
             value={formatMoney(budget.monthlyAllowanceCap, currency, { trim: true })}
@@ -264,24 +303,6 @@ export default function SettingsScreen() {
           <ReminderSettings />
         </SettingsGroup>
 
-        <SettingsGroup title="Profile">
-          <View style={styles.inline}>
-            <TextField
-              label="Your name"
-              optional
-              placeholder="What should we call you?"
-              helper="Used in your greeting."
-              value={name}
-              onChangeText={setName}
-              onBlur={saveName}
-              onSubmitEditing={saveName}
-              maxLength={30}
-              autoCapitalize="words"
-              returnKeyType="done"
-            />
-          </View>
-        </SettingsGroup>
-
         <SettingsGroup
           title="Data"
           footer="Your data lives only on this phone. A backup is a file you keep — in Files, iCloud Drive, Google Drive or email — with your tasks, wishlist, photos and history. Theme and other preferences aren’t included."
@@ -332,6 +353,7 @@ export default function SettingsScreen() {
           </SettingsGroup>
         )}
       </ScrollView>
+      </View>
       <ResetDataModal visible={resetOpen} onCancel={() => setResetOpen(false)} onConfirm={eraseEverything} />
     </>
   );
@@ -339,7 +361,9 @@ export default function SettingsScreen() {
 
 const useStyles = makeStyles((colors) => ({
   screen: { flex: 1, backgroundColor: colors.bg },
-  content: { paddingHorizontal: SCREEN_GUTTER, gap: 24 },
+  content: { paddingHorizontal: SCREEN_GUTTER, paddingTop: 8, gap: 24 },
+  me: { flexDirection: 'row', alignItems: 'flex-start', gap: 16 },
+  meText: { flex: 1 },
   motion: { padding: 16, gap: 10 },
   topDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

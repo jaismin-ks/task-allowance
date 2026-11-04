@@ -1,4 +1,5 @@
-// app/(tabs)/_layout.js — custom floating tab bar
+// app/(tabs)/_layout.js — custom floating tab bar: Tasks · Wishlist.
+// Profile & settings open from the profile button (top right), not a tab.
 import { Tabs } from 'expo-router/js-tabs';
 import { TabBar } from '../../components/TabBar';
 import { useColors } from '../../theme/theme';
@@ -16,7 +17,6 @@ export default function TabLayout() {
     >
       <Tabs.Screen name="tasks" options={{ title: 'Tasks' }} />
       <Tabs.Screen name="wishlist" options={{ title: 'Wishlist' }} />
-      <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
     </Tabs>
   );
 }

@@ -1,12 +1,11 @@
-// app/(tabs)/settings/about.js — S15 About & privacy. Opens scrolled to the tapped section.
+// app/settings/about.js — S15 About & privacy. Opens scrolled to the tapped section.
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useBottomChrome } from '../../../components/layout';
-import { AppText } from '../../../components/ui/AppText';
-import { PushHeader } from '../../../components/ui/Headers';
-import { makeStyles, useColors } from '../../../theme/theme';
+import { AppText } from '../../components/ui/AppText';
+import { PushHeader } from '../../components/ui/Headers';
+import { makeStyles, useColors } from '../../theme/theme';
 
 const SECTIONS = [
   {
@@ -49,7 +48,6 @@ export default function AboutScreen() {
   const styles = useStyles();
   const { section } = useLocalSearchParams();
   const insets = useSafeAreaInsets();
-  const { tabContentPadding } = useBottomChrome();
   const scrollRef = useRef(null);
   const scrolled = useRef(false);
 
@@ -58,7 +56,7 @@ export default function AboutScreen() {
       <View style={{ paddingTop: insets.top }}>
         <PushHeader title="About" onBack={() => router.back()} />
       </View>
-      <ScrollView ref={scrollRef} contentContainerStyle={[styles.content, { paddingBottom: tabContentPadding }]}>
+      <ScrollView ref={scrollRef} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}>
         {SECTIONS.map((s) => (
           <View
             key={s.key}

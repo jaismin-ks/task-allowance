@@ -14,6 +14,7 @@ import { AppText } from '../../components/ui/AppText';
 import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { IconButton } from '../../components/ui/Headers';
+import { ProfileButton } from '../../components/ProfileButton';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { completeTask, uncompleteTask } from '../../db/operations/completeTask';
 import { formatHeaderDate, formatMoney, greeting, moneyToWords } from '../../lib/format';
@@ -150,7 +151,7 @@ export default function TasksScreen() {
               <AppText variant="caption" color={colors.textMuted}>{formatHeaderDate()}</AppText>
               <StreakChip streak={streak} />
             </View>
-            <IconButton icon="chart" label="Activity" size={20} onPress={() => router.push('/activity')} />
+            <ProfileButton />
           </View>
           <AppText variant="h1" accessibilityRole="header">
             {greeting()}

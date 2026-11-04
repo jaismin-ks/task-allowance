@@ -1,6 +1,7 @@
-// app/(tabs)/settings/_layout.js — Stack inside the Settings tab (push, tab bar stays visible)
+// app/settings/_layout.js — Profile & settings stack, opened from the profile button
+// (top right of Tasks and Wishlist). Sub-pages push from the right.
 import { Stack } from 'expo-router';
-import { useColors } from '../../../theme/theme';
+import { useColors } from '../../theme/theme';
 
 export default function SettingsLayout() {
   const colors = useColors();

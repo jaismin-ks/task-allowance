@@ -1,23 +1,21 @@
-// app/(tabs)/settings/allowance.js — S13 Monthly allowance (explicit Save)
+// app/settings/allowance.js — S13 Monthly allowance (explicit Save)
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AllowanceField } from '../../../components/AllowanceField';
-import { useBottomChrome } from '../../../components/layout';
-import { Banner } from '../../../components/ui/Banner';
-import { Button } from '../../../components/ui/Button';
-import { PushHeader } from '../../../components/ui/Headers';
-import { updateMonthlyCap } from '../../../db/operations/userProfile';
-import { parseMoney, toMoneyInput } from '../../../lib/format';
-import { validate } from '../../../lib/validation';
-import { usePoolStore } from '../../../store/poolStore';
-import { makeStyles } from '../../../theme/theme';
+import { AllowanceField } from '../../components/AllowanceField';
+import { Banner } from '../../components/ui/Banner';
+import { Button } from '../../components/ui/Button';
+import { PushHeader } from '../../components/ui/Headers';
+import { updateMonthlyCap } from '../../db/operations/userProfile';
+import { parseMoney, toMoneyInput } from '../../lib/format';
+import { validate } from '../../lib/validation';
+import { usePoolStore } from '../../store/poolStore';
+import { makeStyles } from '../../theme/theme';
 
 export default function AllowanceScreen() {
   const styles = useStyles();
   const insets = useSafeAreaInsets();
-  const { tabContentPadding } = useBottomChrome();
   const { budget, earnedToday, refresh } = usePoolStore();
   const [value, setValue] = useState(toMoneyInput(budget.monthlyAllowanceCap));
   const [error, setError] = useState(null);
@@ -37,7 +35,7 @@ export default function AllowanceScreen() {
       <View style={{ paddingTop: insets.top }}>
         <PushHeader title="Monthly allowance" onBack={() => router.back()} />
       </View>
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: tabContentPadding }]} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]} keyboardShouldPersistTaps="handled">
         <AllowanceField
           value={value}
           onChangeText={(v) => {
