@@ -1,88 +1,68 @@
 # TaskAllowance: from project to app
 
-Audit date: Nov 4, 2026. Sources: the UX Spec v1.0, the Technical Architecture doc,
-this repo, and [taskallowance-api](https://github.com/jaismin-ks/taskallowance-api).
+Sources: the UX Spec v1.0, the Technical Architecture doc, this repo, and
+[taskallowance-api](https://github.com/jaismin-ks/taskallowance-api). It merges two
+audits, from Oct 16 and Nov 4, 2026.
 
-**Constraint for now: nothing that costs money.** Paid items are listed separately at
-the end and stay parked until you decide to spend.
+**Constraint for now: nothing that costs money.** Paid items are listed at the end and
+stay parked until you decide to spend.
 
-## Where it stands
+Legend: 📦 adds a native module, so it needs a new dev/EAS build (Expo Go already
+includes most). 👤 needs you (a device, an account, or a decision).
 
-The app is much further along than an MVP. It matches the UX spec closely, and the
-code is careful: transactional money writes, idempotent recurrence, spec copy used
-verbatim, and accessibility labels and Reduce Motion handled throughout. Beyond the
-spec it already has repeating tasks, search and filters, wishlist photos, a light
-theme with five accents, and an on-device scrape fallback.
+## Done
 
-| Area | Status |
+| Area | Notes |
 | --- | --- |
-| Tasks, add/edit, undo, daily guide, soft warnings | Done |
-| Wishlist, link fetch + manual, item detail, goal, "I bought it", next goal | Done |
-| Onboarding, settings, allowance, currency, about, reset | Done |
-| Voice capture | Done (needs a dev/production build, not Expo Go) |
-| New-month summary, cross-month Available | Done |
-| Generate pack (S5/S6) + `/api/generate-tasks` | **Not built** (needs a paid AI key, so parked) |
-| Automated tests | Added in this branch (52, money math first) |
-| App identity, icons, build config | Added in this branch |
-| Crash handling | Added in this branch |
-| Backup / restore | Missing |
-| Store listing, privacy policy, screenshots | Missing |
+| Core loop from the spec | Tasks, wishlist, goal, undo, daily guide, onboarding, settings, month wrap-up |
+| Money drift fix | Totals rounded to cents. A $10 goal could previously never unlock |
+| Tests | DB-backed tests on real SQLite plus pure unit tests (`npm test`) |
+| App identity | Name, bundle id/package, progress-ring icon + splash, EAS profiles |
+| Crash screen | Root error boundary + migration failure screen, "Copy error details" |
+| Backup & restore 📦 | File via share sheet, photos included, strict validation, all-or-nothing |
+| Missed repeats | One pending copy per repeating task; misses kept as history, "MISSED 3" |
+| Activity | Streak, last 7 days chart, lifetime totals, full history |
+| Streaks + goal ETA | Streak chip on Tasks; "At your recent pace, about 12 days" |
+| Daily reminder 📦 | Local notification, live copy, quiet once done, Settings → Reminder |
+| Rating prompt 📦 | After the second goal is bought, once per version |
+| Expo SDK 58 | Plus fixes for the tab bar crash and sheet header overlap it caused |
 
-## Bugs found
+## Next: polish (free)
 
-1. **Money drift, fixed.** Pool totals were float sums. Five tasks worth $10.00 added up
-   to 9.999999999999998, so a $10 goal never triggered "Unlocked" and showed "$0.00 to go".
-   Totals are now rounded to cents on write and read, and there are tests for it.
-2. **Missed repeats piled up, fixed.** A daily task ignored for a month left 31 pending
-   copies. Now only the newest occurrence is pending. A missed one carries forward
-   until the next is due, then becomes `skipped` (kept as history, never credited),
-   and the row says "MISSED 3".
-3. **Template placeholders shipped.** Expo icon/splash, `task-allowance-app` name, no
-   Android package. Fixed.
-4. **Render crashes showed a blank screen.** Fixed with a root error boundary.
+| # | Item | Notes |
+| --- | --- | --- |
+| 1 | Device test of everything marked 📦 above 👤 | Backup/restore round trip, reminder firing, permission denied path |
+| 2 | Swipe actions on task rows | Swipe right to complete, left to delete. gesture-handler 3 is installed |
+| 3 | Goal milestones | Toast + light haptic at 25 / 50 / 75 % |
+| 4 | "Do it again" on today's completed one-off tasks | Long-press |
+| 5 | Monthly bar chart in Activity | Last 6 months earned vs allowance |
+| 6 | Wishlist sort | Newest, price, closest to affordable |
+| 7 | Tasks list → FlatList | Smooth with 100+ pending tasks |
+| 8 | Task templates | Save frequent tasks, add in one tap (a free stand-in for AI packs) |
+| 9 | Home-screen widget 📦 | Large build; needs a dev build, not Expo Go |
 
-## Plan (all free)
+## Quality gate (you, on devices) 👤
 
-### Phase A: foundations (this branch)
-- [x] Round money to cents, plus a Jest suite running the real DB ops on SQLite
-- [x] App name, bundle id/package, branded icon + splash, EAS profiles, README
-- [x] Error boundary with "Copy error details"
-- [x] Backup & restore: export everything to a JSON file (share sheet) and import it
-      back. Today, deleting the app loses all data.
+- Spec §7 accessibility pass: VoiceOver + TalkBack on every screen, 160% text size
+- Release-mode builds: `npx expo run:ios --configuration Release` and the `preview` APK
+- Month rollover: set the phone date to the 1st and reopen
+- Missed repeats: set the date a few days ahead and reopen
 
-### Phase B: product polish
-- [x] Missed repeating tasks: collapse the backlog (bug 2)
-- [ ] Optional daily reminder (local notification, on-device, no server): "3 tasks
-      left today · $4.20 to earn". Off by default, with the time picked in Settings.
-- [ ] First-run hint on the Tasks screen (one dismissible card) explaining value →
-      goal, since onboarding is skippable
-- [ ] Hide the "Generate pack" spec entry points until the feature exists (already
-      hidden; keep it that way and remove dead copy if any)
-- [ ] Empty-state and copy pass against spec §6 on a real device
-- [ ] Ask for a store review after the first goal is unlocked (`expo-store-review`,
-      free; only meaningful once the app is in a store)
+## Release prep that's still free
 
-### Phase C: quality gate (you, on devices)
-- [ ] Spec §7 accessibility pass: VoiceOver + TalkBack on every screen, 160% text
-- [ ] Release-mode builds: `npx expo run:ios --configuration Release` (free Apple ID,
-      7-day signing) and the `preview` Android APK
-- [ ] Month rollover on a device: change the phone date to the 1st and reopen
-- [ ] Performance with ~200 tasks (Tasks uses a ScrollView; switch to a FlatList if it stutters)
-
-### Phase D: release prep that's still free
-- [ ] Privacy policy page (GitHub Pages, free). Data stays on the phone; product
-      links go to the API; voice uses the OS recognizer. Stores require the URL.
-- [ ] Store listing copy, keywords, and 6.7" + 5.5" screenshots (simulator)
-- [ ] Deploy taskallowance-api on Vercel Hobby (free) with Upstash Redis free tier,
-      so rate limiting is on. Set `EXPO_PUBLIC_API_BASE` in `eas.json`.
-- [ ] Share the Android `preview` APK with a few testers directly (no Play account needed)
+- Privacy policy page on GitHub Pages (both stores require a URL). The in-app Privacy text can be reused.
+- Store listing copy, keywords, screenshots (6.7" and 6.1" iPhone, Android phone)
+- taskallowance-api on Vercel Hobby + Upstash free tier, so rate limiting is on.
+  `eas.json` already points `preview`/`production` at `https://taskallowance-api.vercel.app`;
+  confirm that deployment exists.
+- Share the Android `preview` APK with testers directly (no Play account needed)
 
 ## Parked: costs money
 
-| Item | Cost | Why it waits |
+| Item | Cost | Notes |
 | --- | --- | --- |
-| Generate pack (AI) | LLM API usage (small, but needs a card on file) | The architecture doc already designs it: `/api/generate-tasks`, zod validation, 10/day cap |
-| App Store release, TestFlight, iPhone dev builds over 7 days | Apple Developer Program, $99/yr | Required for any iOS distribution |
-| Google Play release | $25 one-time | Required for the Play Store (APK sideloading is free) |
-| Crash reporting at scale | Sentry free tier is fine at first | Free tier first; only pay if volume grows |
+| Generate pack (AI) | LLM API usage | Designed in the architecture doc: `/api/generate-tasks`, zod validation, 10/day cap |
+| App Store / TestFlight | Apple Developer Program, $99/yr | Required for any iOS distribution |
+| Google Play | $25 one-time | APK sideloading is free meanwhile |
+| Crash reporting | Sentry free tier first | Only pay if volume grows |
 | Cloud sync / accounts | Supabase free tier, later paid | Architecture doc says Phase 3+, optional |

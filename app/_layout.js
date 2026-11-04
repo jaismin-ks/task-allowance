@@ -23,6 +23,7 @@ import migrations from '../db/migrations/migrations';
 import { getProfile } from '../db/operations/userProfile';
 import { cleanUpOrphanPhotos } from '../lib/itemPhotos';
 import { checkMonthRollover } from '../lib/monthRollover';
+import { useReminderSync } from '../lib/reminders';
 import { usePoolStore } from '../store/poolStore';
 import { makeStyles, useColors } from '../theme/theme';
 
@@ -86,6 +87,8 @@ export default function RootLayout() {
   });
   const ready = success && (fontsLoaded || !!fontError);
   const navReady = !!useRootNavigationState()?.key;
+  // Daily reminder schedule follows tasks, earnings and the setting
+  useReminderSync(ready);
 
   useEffect(() => {
     if (ready || error) SplashScreen.hideAsync();
@@ -164,6 +167,7 @@ export default function RootLayout() {
           <Stack.Screen name="next-goal" options={sheet([0.75])} />
           <Stack.Screen name="goal-reached" options={focusModal} />
           <Stack.Screen name="month-summary" options={sheet('fitToContents')} />
+          <Stack.Screen name="activity" options={sheet([0.92])} />
         </Stack>
         <OverlayHost />
       </ThemeProvider>

@@ -10,11 +10,14 @@ import { AppText } from '../components/ui/AppText';
 import { Button } from '../components/ui/Button';
 import { SheetHeader } from '../components/ui/Headers';
 import { Icon } from '../components/ui/Icon';
+import { maybeAskForReview } from '../lib/review';
 import { usePoolStore } from '../store/poolStore';
 import { showToast } from '../store/uiStore';
 import { useWishlistStore } from '../store/wishlistStore';
 import { radius } from '../theme/tokens';
 import { makeStyles, useColors } from '../theme/theme';
+
+const REVIEW_DELAY_MS = 1200;
 
 export default function NextGoalScreen() {
   const colors = useColors();
@@ -27,6 +30,14 @@ export default function NextGoalScreen() {
   useEffect(() => {
     loadItems();
   }, [loadItems]);
+
+  // Just bought a goal: the best moment to ask for a rating. Wait for the sheet
+  // to settle so the prompt never lands mid-transition.
+  useEffect(() => {
+    if (mode !== 'bought') return undefined;
+    const t = setTimeout(maybeAskForReview, REVIEW_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [mode]);
 
   const pick = (item) => {
     setPriority(item.id);

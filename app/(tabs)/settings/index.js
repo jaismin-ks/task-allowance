@@ -7,6 +7,7 @@ import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SCREEN_GUTTER, useBottomChrome } from '../../../components/layout';
 import { AccentPicker } from '../../../components/AccentPicker';
+import { ReminderSettings } from '../../../components/ReminderSettings';
 import { ResetDataModal } from '../../../components/ResetDataModal';
 import { SettingsGroup, SettingsRow } from '../../../components/SettingsList';
 import { AppText } from '../../../components/ui/AppText';
@@ -16,11 +17,13 @@ import { TextField } from '../../../components/ui/TextField';
 import { Toggle } from '../../../components/ui/Toggle';
 import { getProfile, updateProfile } from '../../../db/operations/userProfile';
 import { resetAllData } from '../../../db/operations/wishlist';
-import { applyBackup, exportBackup, pickBackup } from '../../../lib/backupFiles';
+import { RESTORE_ERRORS, summarizeBackup } from '../../../lib/backup';
+import { exportBackup, pickBackup, restoreBackup } from '../../../lib/backupFile';
 import { runCompletionIntegrityCheck } from '../../../lib/devChecks';
 import { formatMoney } from '../../../lib/format';
 import { deleteAllItemPhotos } from '../../../lib/itemPhotos';
 import { flags, usePrefs } from '../../../lib/prefs';
+import { DEFAULT_REMINDER_TIME } from '../../../lib/reminderPlan';
 import { isVoiceSupported } from '../../../lib/voiceInput';
 import { usePoolStore } from '../../../store/poolStore';
 import { showToast } from '../../../store/uiStore';
@@ -73,7 +76,7 @@ export default function SettingsScreen() {
     deleteAllItemPhotos();
     flags.clearAll();
     setLastBackupAt(null);
-    usePrefs.setState({ haptics: true, motion: 'system' });
+    usePrefs.setState({ haptics: true, motion: 'system', reminder: false, reminderTime: DEFAULT_REMINDER_TIME });
     await AsyncStorage.removeItem('lastKnownMonthKey');
     reloadEverything();
     router.replace('/onboarding');
@@ -90,13 +93,15 @@ export default function SettingsScreen() {
     setBackupBusy(true);
     try {
       const result = await exportBackup();
-      if (result === 'unavailable') {
-        Alert.alert('Can’t share files here', 'This device doesn’t offer a way to save or share files.');
+      if (result.status === 'unavailable') {
+        Alert.alert('Sharing isn’t available', 'This phone can’t open the share sheet right now, so the backup wasn’t saved.');
       } else {
-        setLastBackupAt(flags.get('lastBackupAt'));
+        const now = new Date().toISOString();
+        flags.set('lastBackupAt', now);
+        setLastBackupAt(now);
       }
     } catch {
-      Alert.alert('Backup didn’t finish', 'Nothing was changed. Try again.');
+      Alert.alert('Couldn’t back up your data', 'Nothing on this phone was changed. Try again in a moment.');
     } finally {
       setBackupBusy(false);
     }
@@ -104,22 +109,23 @@ export default function SettingsScreen() {
 
   const restore = async () => {
     if (backupBusy) return;
+    setBackupBusy(true);
     let picked;
     try {
       picked = await pickBackup();
     } catch {
-      Alert.alert('Couldn’t open that file', 'Try again, or pick a different file.');
-      return;
+      picked = { status: 'invalid', error: 'not-backup' };
+    } finally {
+      setBackupBusy(false);
     }
     if (picked.status === 'canceled') return;
     if (picked.status === 'invalid') {
-      Alert.alert('Can’t restore this file', picked.error);
+      Alert.alert('Couldn’t restore that file', RESTORE_ERRORS[picked.error]);
       return;
     }
-    const { tasks, wishlistItems, months, exportedAt } = picked.summary;
-    const from = exportedAt
-      ? ` from ${new Date(exportedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
-      : '';
+    const { tasks, wishlistItems, exportedAt } = summarizeBackup(picked.backup);
+    const months = picked.backup.data.allowance_pool.length;
+    const from = ` from ${exportedAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
     const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
     Alert.alert(
       'Replace everything on this phone?',
@@ -131,9 +137,9 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: () => {
             try {
-              applyBackup(picked.backup);
+              restoreBackup(picked.backup);
             } catch {
-              Alert.alert('Restore didn’t finish', 'Nothing was changed. The backup file may be damaged.');
+              Alert.alert('Couldn’t restore that file', 'Something went wrong while restoring. Nothing on this phone was changed.');
               return;
             }
             reloadEverything();
@@ -165,6 +171,11 @@ export default function SettingsScreen() {
         <AppText variant="h1" accessibilityRole="header">Settings</AppText>
 
         <SettingsGroup title="Allowance">
+          <SettingsRow
+            label="Activity"
+            helper="Your streak, history and totals."
+            onPress={() => router.push('/activity')}
+          />
           <SettingsRow
             label="Monthly allowance"
             value={formatMoney(budget.monthlyAllowanceCap, currency, { trim: true })}
@@ -249,6 +260,10 @@ export default function SettingsScreen() {
           </View>
         </SettingsGroup>
 
+        <SettingsGroup title="Reminder">
+          <ReminderSettings />
+        </SettingsGroup>
+
         <SettingsGroup title="Profile">
           <View style={styles.inline}>
             <TextField
@@ -269,7 +284,7 @@ export default function SettingsScreen() {
 
         <SettingsGroup
           title="Data"
-          footer="Your data lives only on this phone. A backup is a file you keep — in Files, iCloud Drive, Google Drive or email — so you can restore it after deleting the app or on a new phone."
+          footer="Your data lives only on this phone. A backup is a file you keep — in Files, iCloud Drive, Google Drive or email — with your tasks, wishlist, photos and history. Theme and other preferences aren’t included."
         >
           <SettingsRow
             label={backupBusy ? 'Preparing backup…' : 'Back up data'}
