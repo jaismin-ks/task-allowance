@@ -32,7 +32,7 @@ includes most). 👤 needs you (a device, an account, or a decision).
 | # | Item | Notes |
 | --- | --- | --- |
 | 1 | Device test of everything marked 📦 above 👤 | Backup/restore round trip, reminder firing, permission denied path |
-| 2 | Swipe actions on task rows | Swipe right to complete, left to delete. gesture-handler 3 is installed |
+| 2 | ~~Swipe actions on task rows~~ ✅ | Right = done, left = delete with Undo. Needs on-device feel testing 👤 |
 | 3 | Goal milestones | Toast + light haptic at 25 / 50 / 75 % |
 | 4 | "Do it again" on today's completed one-off tasks | Long-press |
 | 5 | Monthly bar chart in Activity | Last 6 months earned vs allowance |

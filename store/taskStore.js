@@ -74,4 +74,23 @@ export const useTaskStore = create((set, get) => ({
     sqlite.runSync(`DELETE FROM task WHERE id = ? AND completion_status = 'pending'`, [id]);
     get().load();
   },
+  // Swipe-to-delete with Undo: returns the deleted row (every column) or null.
+  // Pending only, like deleteTask — a credited task can't be removed.
+  deleteTaskForUndo: (id) => {
+    const row = sqlite.getFirstSync(`SELECT * FROM task WHERE id = ? AND completion_status = 'pending'`, [id]);
+    if (!row) return null;
+    sqlite.runSync(`DELETE FROM task WHERE id = ?`, [id]);
+    get().load();
+    return row;
+  },
+  // Puts a row from deleteTaskForUndo back exactly as it was (same id, timestamp,
+  // series + due date). OR IGNORE: if it somehow came back already, do nothing.
+  restoreTask: (row) => {
+    const cols = Object.keys(row);
+    sqlite.runSync(
+      `INSERT OR IGNORE INTO task (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`,
+      cols.map((c) => row[c])
+    );
+    get().load();
+  },
 }));

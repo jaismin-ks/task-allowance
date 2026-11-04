@@ -15,6 +15,7 @@ import * as SystemUI from 'expo-system-ui';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo } from 'react';
 import { AppState, Platform, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorScreen } from '../components/ErrorScreen';
 import { OverlayHost } from '../components/OverlayHost';
@@ -147,31 +148,34 @@ export default function RootLayout() {
   if (!ready) return <View style={styles.fill} />;
 
   return (
-    <SafeAreaProvider>
-      <ThemeProvider value={navTheme}>
-        <StatusBar style={colors.mode === 'dark' ? 'light' : 'dark'} />
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="onboarding" options={{ gestureEnabled: false, animation: 'fade' }} />
-          <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
-          <Stack.Screen name="task/new" options={sheet([0.92])} />
-          <Stack.Screen name="task/[id]" options={sheet([0.92])} />
-          <Stack.Screen name="task/series/[id]" options={sheet([0.92])} />
-          <Stack.Screen name="task/filters" options={sheet([0.85])} />
-          <Stack.Screen name="voice" options={focusModal} />
-          <Stack.Screen
-            name="wishlist/new"
-            options={{ presentation: 'modal', contentStyle: { backgroundColor: colors.bg } }}
-          />
-          <Stack.Screen name="wishlist/[id]" options={sheet([0.92])} />
-          <Stack.Screen name="next-goal" options={sheet([0.75])} />
-          <Stack.Screen name="goal-reached" options={focusModal} />
-          <Stack.Screen name="month-summary" options={sheet('fitToContents')} />
-          <Stack.Screen name="activity" options={sheet([0.92])} />
-        </Stack>
-        <OverlayHost />
-      </ThemeProvider>
-    </SafeAreaProvider>
+    // Gesture root: swipe actions on task rows need it
+    <GestureHandlerRootView style={styles.fill}>
+      <SafeAreaProvider>
+        <ThemeProvider value={navTheme}>
+          <StatusBar style={colors.mode === 'dark' ? 'light' : 'dark'} />
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="onboarding" options={{ gestureEnabled: false, animation: 'fade' }} />
+            <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+            <Stack.Screen name="task/new" options={sheet([0.92])} />
+            <Stack.Screen name="task/[id]" options={sheet([0.92])} />
+            <Stack.Screen name="task/series/[id]" options={sheet([0.92])} />
+            <Stack.Screen name="task/filters" options={sheet([0.85])} />
+            <Stack.Screen name="voice" options={focusModal} />
+            <Stack.Screen
+              name="wishlist/new"
+              options={{ presentation: 'modal', contentStyle: { backgroundColor: colors.bg } }}
+            />
+            <Stack.Screen name="wishlist/[id]" options={sheet([0.92])} />
+            <Stack.Screen name="next-goal" options={sheet([0.75])} />
+            <Stack.Screen name="goal-reached" options={focusModal} />
+            <Stack.Screen name="month-summary" options={sheet('fitToContents')} />
+            <Stack.Screen name="activity" options={sheet([0.92])} />
+          </Stack>
+          <OverlayHost />
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 

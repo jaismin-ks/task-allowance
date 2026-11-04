@@ -96,6 +96,26 @@ export default function TasksScreen() {
 
   const openEdit = (task) => router.push(`/task/${task.id}`);
 
+  // Swipe left (or the "Delete" accessibility action). No confirm dialog: the
+  // 5-second Undo puts the row back exactly as it was.
+  const handleDelete = (task) => {
+    const row = useTaskStore.getState().deleteTaskForUndo(task.id);
+    if (!row) return;
+    haptic.selection();
+    useUiStore.getState().showSnackbar({
+      message: 'Task deleted',
+      announcement: `${task.title} deleted.`,
+      actionLabel: 'Undo',
+      actionA11yLabel: `Undo deleting ${task.title}`,
+      onAction: () => {
+        useTaskStore.getState().restoreTask(row);
+        refreshAll();
+        AccessibilityInfo.announceForAccessibility(`${task.title} restored.`);
+      },
+    });
+    refreshAll();
+  };
+
   const name = profile?.displayName && profile.displayName !== 'Me' ? `, ${profile.displayName}` : '';
   const total = pending.length + completedToday.length;
 
@@ -187,7 +207,14 @@ export default function TasksScreen() {
             ) : (
               <View style={styles.list}>
                 {shownPending.map((t) => (
-                  <TaskRow key={t.id} task={t} currency={currency} onComplete={handleComplete} onEdit={openEdit} />
+                  <TaskRow
+                    key={t.id}
+                    task={t}
+                    currency={currency}
+                    onComplete={handleComplete}
+                    onEdit={openEdit}
+                    onDelete={handleDelete}
+                  />
                 ))}
                 {shownDone.map((t) => (
                   <TaskRow key={t.id} task={t} currency={currency} onComplete={handleComplete} onEdit={openEdit} />
