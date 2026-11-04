@@ -14,8 +14,9 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as SystemUI from 'expo-system-ui';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo } from 'react';
-import { AppState, Platform, Text, View } from 'react-native';
+import { AppState, Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { ErrorScreen } from '../components/ErrorScreen';
 import { OverlayHost } from '../components/OverlayHost';
 import { db, sqlite } from '../db/client';
 import migrations from '../db/migrations/migrations';
@@ -26,6 +27,19 @@ import { usePoolStore } from '../store/poolStore';
 import { makeStyles, useColors } from '../theme/theme';
 
 SplashScreen.preventAutoHideAsync();
+
+// Expo Router renders this instead of the app when anything below throws while
+// rendering. Data is in SQLite, so "Try again" loses nothing.
+export function ErrorBoundary({ error, retry }) {
+  return (
+    <ErrorScreen
+      title="Something went wrong."
+      body="Your tasks, wishlist and earnings are safe on this phone. Try again, and if it keeps happening, copy the details below and send them with a bug report."
+      error={error}
+      onRetry={retry}
+    />
+  );
+}
 
 // Navigation chrome follows the active palette (Settings → Appearance)
 const navThemeFor = (colors) => {
@@ -115,11 +129,15 @@ export default function RootLayout() {
     return () => subscription.remove();
   }, [ready, navReady]);
 
+  // A failed migration is rolled back, so the old data is intact — but the app
+  // can't run on it. An update that fixes the migration is the only way forward.
   if (error) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>Database migration failed: {error.message}</Text>
-      </View>
+      <ErrorScreen
+        title="TaskAllowance couldn’t open your data."
+        body="Nothing has been deleted. This usually means an update didn’t install cleanly — check for an app update, then reopen the app."
+        error={error}
+      />
     );
   }
 
@@ -155,12 +173,4 @@ export default function RootLayout() {
 
 const useStyles = makeStyles((colors) => ({
   fill: { flex: 1, backgroundColor: colors.bg },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: colors.bg,
-  },
-  errorText: { color: colors.danger, textAlign: 'center' },
 }));
