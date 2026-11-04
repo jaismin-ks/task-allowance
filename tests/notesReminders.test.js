@@ -48,3 +48,21 @@ test('missed (skipped) occurrences never carry a reminder', () => {
     { d: '2026-10-03', s: 'pending', r: '2026-10-03T07:00' },
   ]);
 });
+
+test('a done task can be renamed and made repeating without a duplicate today', () => {
+  const { addTask, updateCompletedTask } = useTaskStore.getState();
+  addTask({ title: 'Gym', monetaryValue: 3, effortRating: 4 });
+  const id = sqlite.getFirstSync(`SELECT id FROM task`).id;
+  sqlite.runSync(`UPDATE task SET completion_status = 'completed', completed_at = datetime('now') WHERE id = ?`, [id]);
+
+  updateCompletedTask(id, { title: 'Gym session', notes: 'Legs' });
+  expect(getTask(id)).toMatchObject({ title: 'Gym session', notes: 'Legs', monetaryValue: 3 });
+
+  const seriesId = createSeries(
+    { title: 'Gym session', monetaryValue: 3, effortRating: 4, notes: 'Legs' },
+    { frequency: 'daily', weekdays: [], monthDay: 1 },
+    { attachTaskId: id }
+  );
+  const today = sqlite.getAllSync(`SELECT id, completion_status AS s FROM task WHERE series_id = ?`, [seriesId]);
+  expect(today).toEqual([{ id, s: 'completed' }]); // the done task is today's copy
+});

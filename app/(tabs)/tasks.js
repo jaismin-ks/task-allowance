@@ -99,6 +99,28 @@ export default function TasksScreen() {
 
   const openEdit = (task) => router.push(`/task/${task.id}`);
 
+  // Tap a done row's tick (or swipe → Undo): back on the list, value comes back off.
+  // The snackbar's Undo puts it straight back to done.
+  const handleUndo = (task) => {
+    if (!uncompleteTask(task.id)) {
+      refreshAll();
+      return;
+    }
+    haptic.selection();
+    refreshAll();
+    useUiStore.getState().showSnackbar({
+      message: `${formatMoney(-task.monetaryValue, currency)} · back on your list`,
+      announcement: `${task.title} marked not done. ${moneyToWords(task.monetaryValue, currency)} taken back off.`,
+      actionLabel: 'Undo',
+      actionA11yLabel: `Mark ${task.title} done again`,
+      onAction: () => {
+        completeTask(task.id);
+        refreshAll();
+        AccessibilityInfo.announceForAccessibility(`${task.title} done.`);
+      },
+    });
+  };
+
   // Swipe left (or the "Delete" accessibility action). No confirm dialog: the
   // 5-second Undo puts the row back exactly as it was.
   const handleDelete = (task) => {
@@ -231,12 +253,20 @@ export default function TasksScreen() {
                     task={t}
                     currency={currency}
                     onComplete={handleComplete}
+                    onUndo={handleUndo}
                     onEdit={openEdit}
                     onDelete={handleDelete}
                   />
                 ))}
                 {shownDone.map((t) => (
-                  <TaskRow key={t.id} task={t} currency={currency} onComplete={handleComplete} onEdit={openEdit} />
+                  <TaskRow
+                    key={t.id}
+                    task={t}
+                    currency={currency}
+                    onComplete={handleComplete}
+                    onUndo={handleUndo}
+                    onEdit={openEdit}
+                  />
                 ))}
                 {pending.length === 0 && !filtering && (
                   <View style={styles.allDone} accessible>

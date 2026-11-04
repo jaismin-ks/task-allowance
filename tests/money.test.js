@@ -83,11 +83,24 @@ describe('uncompleteTask (Undo)', () => {
     expect(status(id)).toBe('pending');
   });
 
-  test('does nothing after the undo window', () => {
+  test('works for anything completed today', () => {
     const id = addTask(3);
     completeTask(id);
-    sqlite.runSync(`UPDATE task SET completed_at = datetime('now', '-10 minutes') WHERE id = ?`, [id]);
-    uncompleteTask(id);
+    // Earlier today, well past the snackbar's window (unless it's just after midnight)
+    sqlite.runSync(
+      `UPDATE task SET completed_at = datetime(date('now', 'localtime'), 'utc') WHERE id = ?`,
+      [id]
+    );
+    expect(uncompleteTask(id)).toBe(true);
+    expect(pool().earned).toBe(0);
+    expect(status(id)).toBe('pending');
+  });
+
+  test('a task completed on an earlier day is final', () => {
+    const id = addTask(3);
+    completeTask(id);
+    sqlite.runSync(`UPDATE task SET completed_at = datetime('now', '-2 days') WHERE id = ?`, [id]);
+    expect(uncompleteTask(id)).toBe(false);
     expect(pool().earned).toBe(3);
     expect(status(id)).toBe('completed');
   });

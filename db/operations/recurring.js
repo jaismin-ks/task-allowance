@@ -86,8 +86,8 @@ export function generateDueOccurrences(today = new Date()) {
 }
 
 // New repeating task, starting today. With `attachTaskId` (turning an existing
-// one-off task into a repeating one), that task becomes today's occurrence when
-// today matches the rule, so it isn't duplicated.
+// one-off task into a repeating one — pending, or already done today), that task
+// becomes today's occurrence when today matches the rule, so it isn't duplicated.
 export function createSeries(
   { title, monetaryValue, effortRating, source = 'manual', notes = null, remindTime = null },
   rule,
@@ -104,7 +104,7 @@ export function createSeries(
     if (attachTaskId && matchesRule(rule, parseDateKey(todayKey))) {
       sqlite.runSync(
         `UPDATE task SET series_id = ?, due_date = ?, notes = ?, remind_at = ?
-         WHERE id = ? AND completion_status = 'pending'`,
+         WHERE id = ? AND completion_status IN ('pending', 'completed')`,
         [id, todayKey, notes || null, remindAtFor(todayKey, remindTime), attachTaskId]
       );
     }

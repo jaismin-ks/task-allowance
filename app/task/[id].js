@@ -1,5 +1,5 @@
-// app/task/[id].js — S3 Edit task (sheet). Completed tasks are read-only: their value
-// has already been credited, so editing it would desync the pool.
+// app/task/[id].js — S3 Edit task (sheet). A done task opens too, with its value and
+// effort locked (already credited): rename it, add a note, or make it repeat.
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -15,12 +15,12 @@ export default function EditTaskScreen() {
   // Snapshot on open — the form owns edits from here
   const [task] = useState(() => getTask(id));
 
-  if (!task || task.completionStatus !== 'pending') {
+  if (!task || task.completionStatus === 'skipped') {
     return (
       <View>
         <SheetHeader title="Edit task" onClose={() => router.back()} />
         <AppText variant="body" color={colors.textMuted} style={styles.note}>
-          {task ? 'Completed tasks can’t be edited.' : 'This task no longer exists.'}
+          {task ? 'This repeat was missed, so it can’t be edited.' : 'This task no longer exists.'}
         </AppText>
       </View>
     );

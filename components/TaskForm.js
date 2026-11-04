@@ -40,6 +40,7 @@ import { Button } from './ui/Button';
 import { Chip } from './ui/Chip';
 import { EffortPicker } from './ui/EffortPicker';
 import { SheetHeader } from './ui/Headers';
+import { AppText } from './ui/AppText';
 import { Icon } from './ui/Icon';
 import { MoneyField } from './ui/MoneyField';
 import { TextField } from './ui/TextField';
@@ -73,7 +74,10 @@ export function TaskForm({ task, series, initialTitle = '', initialSource = 'man
   const editing = !!task || !!series;
   const insets = useSafeAreaInsets();
   const keyboardInset = useKeyboardInset();
-  const { addTask, updateTask, deleteTask, load } = useTaskStore();
+  const { addTask, updateTask, updateCompletedTask, deleteTask, load } = useTaskStore();
+  // A done task (from today): its value is already counted, so value and effort are
+  // locked. You can still rename it, add a note, or make it repeat.
+  const locked = task?.completionStatus === 'completed';
   const { dailyCap, pointsPerDay, budget } = usePoolStore();
   const voiceAvailable = useVoiceAvailable();
   const currency = budget.currencyCode;
@@ -261,6 +265,21 @@ export function TaskForm({ task, series, initialTitle = '', initialSource = 'man
     };
     const seriesFields = { ...fields, remindTime: reminder ? toRemindTime(reminder) : null };
 
+    // A done task: name + note, and optionally start repeating from today (the done
+    // task becomes today's copy, so it isn't duplicated)
+    if (locked) {
+      updateCompletedTask(task.id, { title: fields.title, notes: fields.notes });
+      if (repeating && !isOccurrence) {
+        createSeries(
+          { ...seriesFields, monetaryValue: task.monetaryValue, effortRating: task.effortRating, source: task.source },
+          rule,
+          { attachTaskId: task.id }
+        );
+        announceFirst(rule);
+      }
+      return finish();
+    }
+
     // Editing the repeating task itself: always "this and future ones" from today
     if (series) {
       if (repeating) updateSeries(series.id, seriesFields, rule);
@@ -399,8 +418,8 @@ export function TaskForm({ task, series, initialTitle = '', initialSource = 'man
 
   const extras = [
     !open.note && { key: 'note', label: 'Note', onPress: () => setOpen((o) => ({ ...o, note: true })) },
-    !open.reminder && { key: 'reminder', label: 'Reminder', onPress: openReminder },
-    !open.repeat && {
+    !open.reminder && !locked && { key: 'reminder', label: 'Reminder', onPress: openReminder },
+    !open.repeat && !(locked && isOccurrence) && {
       key: 'repeat',
       label: 'Repeat',
       onPress: () => {
@@ -440,25 +459,43 @@ export function TaskForm({ task, series, initialTitle = '', initialSource = 'man
           right={mic}
         />
 
-        <EffortPicker value={effort} onChange={pickEffort} />
+        {locked ? (
+          <View
+            style={styles.locked}
+            accessible
+            accessibilityLabel={`Earned ${money(task.monetaryValue)}, ${level.name} task. Already counted. Undo the task to change its value or effort.`}
+          >
+            <AppText variant="label">Value</AppText>
+            <AppText variant="numeric" color={colors.accentText}>
+              {money(task.monetaryValue, { signed: true })} · {level.name}
+            </AppText>
+            <AppText variant="small" color={colors.textMuted}>
+              Already counted. Undo the task to change its value or effort.
+            </AppText>
+          </View>
+        ) : (
+          <>
+            <EffortPicker value={effort} onChange={pickEffort} />
 
-        <MoneyField
-          ref={valueRef}
-          label="Value"
-          currencyCode={currency}
-          step={0.25}
-          max={999.99}
-          placeholder={toMoneyInput(suggested)}
-          helper={valueHelper}
-          value={value}
-          onChangeText={changeValue}
-          onBlur={() => blurValidate('value')}
-          error={errors.value}
-          returnKeyType="done"
-          onSubmitEditing={submit}
-        />
+            <MoneyField
+              ref={valueRef}
+              label="Value"
+              currencyCode={currency}
+              step={0.25}
+              max={999.99}
+              placeholder={toMoneyInput(suggested)}
+              helper={valueHelper}
+              value={value}
+              onChangeText={changeValue}
+              onBlur={() => blurValidate('value')}
+              error={errors.value}
+              returnKeyType="done"
+              onSubmitEditing={submit}
+            />
+          </>
+        )}
 
-        {showWarning && (
+        {showWarning && !locked && (
           <Banner
             tone="warning"
             body={`Higher than usual for a ${level.name} task. Totally fine — just checking.`}
@@ -531,7 +568,7 @@ export function TaskForm({ task, series, initialTitle = '', initialSource = 'man
 
       <View style={[styles.footer, { paddingBottom: keyboardInset ? 12 : Math.max(insets.bottom, 16) }]}>
         <Button label={primaryLabel} onPress={submit} />
-        {editing && (
+        {editing && !locked && (
           <Button
             label={series ? 'Stop repeating' : 'Delete task'}
             variant="danger"
@@ -548,6 +585,7 @@ const useStyles = makeStyles((colors) => ({
   flex: { flex: 1 },
   form: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 24, gap: 24 },
   extras: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  locked: { gap: 6 },
   footer: { paddingHorizontal: 20, paddingTop: 12, gap: 4, backgroundColor: colors.surface },
   mic: {
     width: size.hit,

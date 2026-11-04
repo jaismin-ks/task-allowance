@@ -70,6 +70,14 @@ export const useTaskStore = create((set, get) => ({
     );
     get().load();
   },
+  // A done task: only its name and note can change — its value is already credited
+  updateCompletedTask: (id, { title, notes = null }) => {
+    sqlite.runSync(
+      `UPDATE task SET title = ?, notes = ? WHERE id = ? AND completion_status = 'completed'`,
+      [title, notes || null, id]
+    );
+    get().load();
+  },
   deleteTask: (id) => {
     sqlite.runSync(`DELETE FROM task WHERE id = ? AND completion_status = 'pending'`, [id]);
     get().load();

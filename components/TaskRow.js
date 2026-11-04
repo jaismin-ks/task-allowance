@@ -1,9 +1,11 @@
 // components/TaskRow.js
 // Whole row is the tap target. Completing: checkbox pops, title strikes through,
 // value flips to "+$" in lime, border glows (translucent glow — not a solid fill).
-// Long-press (or the "Edit" accessibility action) opens Edit task; pending only.
-// Swipe right = done, swipe left = delete (with Undo, handled by the screen). Both
-// also exist without the gesture: tap, and the "Delete" accessibility action.
+// Tap the row (or its tick) to mark it done — or, if it's done, not done again.
+// Long-press opens Edit. Swipe right = quick done / undo. Swipe left = a tray of
+// buttons: Done (Undo) · Edit · Delete (pending only — a done task's money is
+// already counted). Everything is also reachable without gestures through the
+// accessibility actions.
 import { useRef } from 'react';
 import { Pressable, View } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
@@ -19,10 +21,15 @@ import { Checkbox } from './ui/Checkbox';
 import { EffortMeter } from './ui/EffortMeter';
 import { Icon } from './ui/Icon';
 
-// How far the row must travel before letting go triggers the action
+// Swipe right: how far before letting go toggles done
 const ACTION_WIDTH = 96;
+// Swipe left: one button's width in the tray
+const TRAY_BUTTON = 76;
 
-export function TaskRow({ task, currency, onComplete, onEdit, onDelete }) {
+// Only one row's tray open at a time
+let openRow = null;
+
+export function TaskRow({ task, currency, onComplete, onUndo, onEdit, onDelete }) {
   const colors = useColors();
   const styles = useStyles();
   const reduced = useReducedMotion();
@@ -59,6 +66,17 @@ export function TaskRow({ task, currency, onComplete, onEdit, onDelete }) {
     (missedCount ? `, missed ${missedCount} ${missedCount === 1 ? 'time' : 'times'} before this` : '') +
     (reminderText ? `, reminder ${reminderText}` : '');
 
+  const toggle = () => (done ? onUndo?.(task) : onComplete(task));
+  const fgOn = (bgIsDanger) => (bgIsDanger ? (colors.mode === 'dark' ? '#0B0B0C' : '#FFFFFF') : colors.onAccent);
+  const trayButtons = [
+    done
+      ? { key: 'undo', label: 'Undo', icon: 'retry', bg: colors.surfaceRaised, fg: colors.text, onPress: () => onUndo?.(task) }
+      : { key: 'done', label: 'Done', icon: 'check', bg: colors.accent, fg: colors.onAccent, onPress: () => onComplete(task) },
+    { key: 'edit', label: 'Edit', icon: 'pencil', bg: colors.surfaceRaised, fg: colors.text, onPress: () => onEdit(task) },
+    !done &&
+      onDelete && { key: 'delete', label: 'Delete', icon: 'trash', bg: colors.danger, fg: fgOn(true), onPress: () => onDelete(task) },
+  ].filter(Boolean);
+
   return (
     <Animated.View
       entering={reduced ? undefined : FadeInDown.duration(260)}
@@ -66,35 +84,58 @@ export function TaskRow({ task, currency, onComplete, onEdit, onDelete }) {
     >
       <ReanimatedSwipeable
         ref={swipeRef}
-        enabled={!done}
         leftThreshold={ACTION_WIDTH * 0.6}
-        rightThreshold={ACTION_WIDTH * 0.6}
+        rightThreshold={TRAY_BUTTON * 0.5}
         overshootLeft={false}
         overshootRight={false}
         containerStyle={styles.swipe}
-        renderLeftActions={(progress) => <SwipeAction kind="done" progress={progress} />}
-        renderRightActions={onDelete ? (progress) => <SwipeAction kind="delete" progress={progress} /> : undefined}
-        // Released past the threshold: run the action, then snap the row back
+        renderLeftActions={(progress) => <SwipeAction done={done} progress={progress} />}
+        renderRightActions={() => (
+          <View style={[styles.tray, { width: TRAY_BUTTON * trayButtons.length }]}>
+            {trayButtons.map((b) => (
+              <Pressable
+                key={b.key}
+                onPress={() => {
+                  swipeRef.current?.close();
+                  b.onPress();
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`${b.label} ${task.title}`}
+                style={({ pressed }) => [styles.trayButton, { backgroundColor: b.bg }, pressed && styles.trayPressed]}
+              >
+                <Icon name={b.icon} size={20} color={b.fg} strokeWidth={2.25} />
+                <AppText variant="small" color={b.fg}>{b.label}</AppText>
+              </Pressable>
+            ))}
+          </View>
+        )}
+        onSwipeableWillOpen={() => {
+          if (openRow && openRow !== swipeRef.current) openRow.close();
+          openRow = swipeRef.current;
+        }}
+        // Swiped right past the threshold: toggle, then snap back. Swiped left: the
+        // tray stays open until a button (or the row) is tapped.
         onSwipeableOpen={(direction) => {
+          if (direction !== 'right') return;
           swipeRef.current?.close();
-          if (direction === 'right') onComplete(task);
-          else onDelete?.(task);
+          toggle();
+        }}
+        onSwipeableClose={() => {
+          if (openRow === swipeRef.current) openRow = null;
         }}
       >
         <Pressable
-          onPress={done ? undefined : () => onComplete(task)}
-          onLongPress={done ? undefined : () => onEdit(task)}
-          disabled={done}
+          onPress={toggle}
+          onLongPress={() => onEdit(task)}
           accessibilityRole="button"
           accessibilityLabel={a11yLabel}
-          accessibilityHint={done ? undefined : 'Double-tap to mark done.'}
+          accessibilityHint={done ? 'Double-tap to mark not done.' : 'Double-tap to mark done.'}
           accessibilityState={{ checked: done }}
-          // Double-tap still goes to onPress; "Edit" makes long-press reachable without the gesture
-          accessibilityActions={
-            done
-              ? []
-              : [{ name: 'edit', label: 'Edit' }, ...(onDelete ? [{ name: 'delete', label: 'Delete' }] : [])]
-          }
+          // Double-tap still goes to onPress; these make the long-press and tray reachable
+          accessibilityActions={[
+            { name: 'edit', label: 'Edit' },
+            ...(!done && onDelete ? [{ name: 'delete', label: 'Delete' }] : []),
+          ]}
           onAccessibilityAction={(e) => {
             if (e.nativeEvent.actionName === 'edit') onEdit(task);
             if (e.nativeEvent.actionName === 'delete') onDelete?.(task);
@@ -143,27 +184,25 @@ export function TaskRow({ task, currency, onComplete, onEdit, onDelete }) {
   );
 }
 
-// The panel revealed behind the row. Icon + word, never colour alone.
-function SwipeAction({ kind, progress }) {
+// Revealed when swiping right: Done, or Undo for a done task. Icon + word, never colour alone.
+function SwipeAction({ done, progress }) {
   const colors = useColors();
   const styles = useStyles();
-  const done = kind === 'done';
-  const bg = done ? colors.accent : colors.danger;
-  // Dark text on the bright dark-mode red, white on the deep light-mode red
-  const fg = done ? colors.onAccent : colors.mode === 'dark' ? '#0B0B0C' : '#FFFFFF';
+  const bg = done ? colors.surfaceRaised : colors.accent;
+  const fg = done ? colors.text : colors.onAccent;
   const content = useAnimatedStyle(() => ({
     opacity: interpolate(progress.get(), [0, 0.6, 1], [0, 1, 1]),
     transform: [{ scale: interpolate(progress.get(), [0, 1], [0.8, 1]) }],
   }));
   return (
     <View
-      style={[styles.action, { backgroundColor: bg }, done ? styles.actionLeft : styles.actionRight]}
+      style={[styles.action, { backgroundColor: bg }]}
       accessible={false}
       importantForAccessibility="no-hide-descendants"
     >
       <Animated.View style={[styles.actionContent, content]}>
-        <Icon name={done ? 'check' : 'trash'} size={20} color={fg} strokeWidth={2.25} />
-        <AppText variant="small" color={fg}>{done ? 'Done' : 'Delete'}</AppText>
+        <Icon name={done ? 'retry' : 'check'} size={20} color={fg} strokeWidth={2.25} />
+        <AppText variant="small" color={fg}>{done ? 'Undo' : 'Done'}</AppText>
       </Animated.View>
     </View>
   );
@@ -172,10 +211,11 @@ function SwipeAction({ kind, progress }) {
 const useStyles = makeStyles((colors) => ({
   // Clips the action panels to the row's rounded shape
   swipe: { borderRadius: radius.lg, overflow: 'hidden' },
-  action: { width: ACTION_WIDTH, justifyContent: 'center' },
-  actionLeft: { alignItems: 'flex-start', paddingLeft: 20 },
-  actionRight: { alignItems: 'flex-end', paddingRight: 20, marginLeft: 'auto' },
+  action: { width: ACTION_WIDTH, justifyContent: 'center', alignItems: 'flex-start', paddingLeft: 20 },
   actionContent: { alignItems: 'center', gap: 2 },
+  tray: { flexDirection: 'row', marginLeft: 'auto' },
+  trayButton: { width: TRAY_BUTTON, alignItems: 'center', justifyContent: 'center', gap: 2 },
+  trayPressed: { opacity: 0.8 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

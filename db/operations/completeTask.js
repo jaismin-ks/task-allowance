@@ -46,23 +46,30 @@ export function completeTask(taskId) {
   return credited;
 }
 
-// Generous DB-side bound on the 5s Undo snackbar (it pauses under VoiceOver focus).
-// Past this, completions are final — the UI never offers Undo that late anyway.
+// The Undo snackbar's window, generous because it pauses under VoiceOver focus.
+// Kept alongside "completed today" so an Undo tapped just after midnight still works.
 const UNDO_WINDOW_SECONDS = 120;
 
-// Mirror of completeTask. Debits the month the task was credited to (read from
-// completed_at), not "now" — an undo just after midnight on the 1st must hit last month.
+// Mirror of completeTask: "not done" again, and the value comes back off.
+// Allowed for anything completed today (the done rows on the Tasks list: tap the
+// tick, or swipe → Undo) or in the last couple of minutes. Earlier days are final:
+// they're history (Activity, streaks, month wrap-ups).
+// Debits the month the task was credited to (read from completed_at), not "now" —
+// an undo just after midnight on the 1st must hit last month.
+// Returns true when something was undone.
 export function uncompleteTask(taskId) {
+  let undone = false;
   sqlite.withTransactionSync(() => {
     const row = sqlite.getFirstSync(
       `SELECT monetary_value AS monetaryValue,
               strftime('%Y-%m', completed_at, 'localtime') AS monthKey
        FROM task
        WHERE id = ? AND completion_status = 'completed'
-         AND completed_at >= datetime('now', ?)`,
+         AND (date(completed_at, 'localtime') = date('now', 'localtime')
+              OR completed_at >= datetime('now', ?))`,
       [taskId, `-${UNDO_WINDOW_SECONDS} seconds`]
     );
-    if (!row) return; // Already pending, unknown, or past the undo window
+    if (!row) return; // Already pending, unknown, or from an earlier day
 
     sqlite.runSync(
       `UPDATE task SET completion_status = 'pending', completed_at = NULL WHERE id = ?`,
@@ -72,5 +79,7 @@ export function uncompleteTask(taskId) {
       `UPDATE allowance_pool SET total_earned = ROUND(total_earned - ?, 2) WHERE month_key = ?`,
       [row.monetaryValue, row.monthKey]
     );
+    undone = true;
   });
+  return undone;
 }
