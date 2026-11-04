@@ -10,7 +10,7 @@ export function getBudgetInfo() {
   )[0];
 
   const pool = sqlite.getAllSync(
-    `SELECT total_earned as totalEarned FROM allowance_pool WHERE month_key = ?`,
+    `SELECT ROUND(total_earned, 2) as totalEarned FROM allowance_pool WHERE month_key = ?`,
     [monthKey]
   )[0];
 

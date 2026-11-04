@@ -31,9 +31,11 @@ export function completeTask(taskId) {
       [monthKey]
     );
 
-    // 3. Increment total earned
+    // 3. Increment total earned. Rounded to cents on every write: REAL sums drift
+    // (2.35 + 1.15 + 4.6 + 0.7 + 1.2 = 9.999999999999998), which would leave a
+    // $10 goal "not reached" with $0.00 to go.
     sqlite.runSync(
-      `UPDATE allowance_pool SET total_earned = total_earned + ? WHERE month_key = ?`,
+      `UPDATE allowance_pool SET total_earned = ROUND(total_earned + ?, 2) WHERE month_key = ?`,
       [row.monetaryValue, monthKey]
     );
   });
@@ -62,7 +64,7 @@ export function uncompleteTask(taskId) {
       [taskId]
     );
     sqlite.runSync(
-      `UPDATE allowance_pool SET total_earned = total_earned - ? WHERE month_key = ?`,
+      `UPDATE allowance_pool SET total_earned = ROUND(total_earned - ?, 2) WHERE month_key = ?`,
       [row.monetaryValue, row.monthKey]
     );
   });

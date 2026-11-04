@@ -4,9 +4,10 @@ import { sqlite } from '../client';
 // Available is lifetime earned − lifetime spent, summed across every month's pool row.
 // Reading only the current month would drop goal progress to 0% on the 1st.
 // Monthly rows still drive the allowance and daily-guide math (getBudgetInfo).
+// Rounded to cents so float drift can't keep a goal one ten-trillionth short.
 export function getAvailable() {
   const row = sqlite.getFirstSync(
-    `SELECT COALESCE(SUM(total_earned), 0) - COALESCE(SUM(total_spent), 0) AS available
+    `SELECT ROUND(COALESCE(SUM(total_earned), 0) - COALESCE(SUM(total_spent), 0), 2) AS available
      FROM allowance_pool`
   );
   return row?.available ?? 0;

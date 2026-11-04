@@ -9,7 +9,7 @@ import { computeDailyCap } from '../lib/dailyCap';
 function getEarnedToday() {
   return (
     sqlite.getFirstSync(
-      `SELECT COALESCE(SUM(monetary_value), 0) AS earned FROM task
+      `SELECT ROUND(COALESCE(SUM(monetary_value), 0), 2) AS earned FROM task
        WHERE completion_status = 'completed'
          AND date(completed_at, 'localtime') = date('now', 'localtime')`
     )?.earned ?? 0

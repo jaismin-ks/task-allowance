@@ -24,7 +24,7 @@ export function redeemGoal(itemId) {
       [monthKey]
     );
     sqlite.runSync(
-      `UPDATE allowance_pool SET total_spent = total_spent + ? WHERE month_key = ?`,
+      `UPDATE allowance_pool SET total_spent = ROUND(total_spent + ?, 2) WHERE month_key = ?`,
       [item.price ?? 0, monthKey]
     );
   });
