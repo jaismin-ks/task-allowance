@@ -1,21 +1,27 @@
 {
   "expo": {
-    "name": "task-allowance-app",
-    "slug": "task-allowance-app",
+    "name": "TaskAllowance",
+    "slug": "taskallowance",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "taskallowanceapp",
+    "scheme": "taskallowance",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "infoPlist": {
         "NSSpeechRecognitionUsageDescription": "Allow $(PRODUCT_NAME) to turn your speech into task titles.",
         "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to use the microphone so you can add tasks by voice."
       },
-      "bundleIdentifier": "com.jaismin.task-allowance-app"
+      "bundleIdentifier": "com.jaismin.taskallowance",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "buildNumber": "1"
     },
     "android": {
+      "package": "com.jaismin.taskallowance",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#0B0B0C",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -74,6 +80,7 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
-    "backgroundColor": "#0B0B0C"
+    "backgroundColor": "#0B0B0C",
+    "description": "Earn your wishlist: give tasks a value, check them off, and watch your goal fill up."
   }
 }
