@@ -2,6 +2,7 @@
 import { create } from 'zustand';
 import { sqlite } from '../db/client';
 import { generateDueOccurrences, listActiveSeries } from '../db/operations/recurring';
+import { dateKey } from '../lib/recurrence';
 
 // Completing / undoing lives in db/operations/completeTask.js (transaction-safe,
 // credits the pool) — never change completion_status from here.
@@ -25,9 +26,12 @@ export function getTask(id) {
 }
 
 export const useTaskStore = create((set, get) => ({
-  // Tasks tab view (S1): every pending task (newest first), then today's completed ones.
-  // Completed tasks from previous days are hidden.
+  // Tasks tab view (S1): every pending task for today or earlier (newest first), then
+  // today's completed ones. Completed tasks from previous days are hidden.
+  // A one-off's due_date is the day it's planned for (null = no particular day,
+  // i.e. "today until done"); tasks planned for later wait in `upcoming`.
   pending: [],
+  upcoming: [], // pending one-offs planned for a later day, soonest first
   completedToday: [],
   series: [], // active repeating tasks for the "Repeating" section
   loaded: false,
@@ -35,17 +39,26 @@ export const useTaskStore = create((set, get) => ({
     // Cheap and idempotent — runs on every load so a new day's repeats appear on
     // focus/foreground, including when the app was left open past midnight
     generateDueOccurrences();
+    const today = dateKey();
     const pending = sqlite.getAllSync(
-      `${SELECT} WHERE task.completion_status = 'pending' ORDER BY task.timestamp DESC, task.rowid DESC`
+      `${SELECT} WHERE task.completion_status = 'pending'
+         AND (task.due_date IS NULL OR task.due_date <= ?)
+       ORDER BY task.timestamp DESC, task.rowid DESC`,
+      [today]
+    );
+    const upcoming = sqlite.getAllSync(
+      `${SELECT} WHERE task.completion_status = 'pending' AND task.due_date > ?
+       ORDER BY task.due_date, task.timestamp`,
+      [today]
     );
     const completedToday = sqlite.getAllSync(
       `${SELECT} WHERE task.completion_status = 'completed'
          AND date(task.completed_at, 'localtime') = date('now', 'localtime')
        ORDER BY task.completed_at DESC`
     );
-    set({ pending, completedToday, series: listActiveSeries(), loaded: true });
+    set({ pending, upcoming, completedToday, series: listActiveSeries(), loaded: true });
   },
-  addTask: ({ title, monetaryValue, effortRating, source = 'manual', notes = null, remindAt = null }) => {
+  addTask: ({ title, monetaryValue, effortRating, source = 'manual', notes = null, remindAt = null, dueDate = null }) => {
     // Voice double-submission guard: skip an identical voice task from the last minute
     if (source === 'voice') {
       const dupe = sqlite.getFirstSync(
@@ -56,18 +69,27 @@ export const useTaskStore = create((set, get) => ({
       if (dupe) return;
     }
     sqlite.runSync(
-      `INSERT INTO task (title, monetary_value, effort_rating, source, notes, remind_at) VALUES (?, ?, ?, ?, ?, ?)`,
-      [title, monetaryValue, effortRating, source, notes || null, remindAt || null]
+      `INSERT INTO task (title, monetary_value, effort_rating, source, notes, remind_at, due_date)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [title, monetaryValue, effortRating, source, notes || null, remindAt || null, dueDate || null]
     );
     get().load();
   },
   // Pending only — a credited task's value can't change without desyncing the pool
-  updateTask: (id, { title, monetaryValue, effortRating, notes = null, remindAt = null }) => {
+  // `dueDate` (one-offs only — a repeat's day comes from its schedule): pass it to
+  // move the task to another day; leave it undefined to keep the day as is
+  updateTask: (id, { title, monetaryValue, effortRating, notes = null, remindAt = null, dueDate }) => {
     sqlite.runSync(
       `UPDATE task SET title = ?, monetary_value = ?, effort_rating = ?, notes = ?, remind_at = ?
        WHERE id = ? AND completion_status = 'pending'`,
       [title, monetaryValue, effortRating, notes || null, remindAt || null, id]
     );
+    if (dueDate !== undefined) {
+      sqlite.runSync(`UPDATE task SET due_date = ? WHERE id = ? AND series_id IS NULL AND completion_status = 'pending'`, [
+        dueDate || null,
+        id,
+      ]);
+    }
     get().load();
   },
   // A done task: only its name and note can change — its value is already credited

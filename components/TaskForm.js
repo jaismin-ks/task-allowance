@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createSeries, getSeries, stopSeries, updateSeries } from '../db/operations/recurring';
 import { effortInfo } from '../lib/effort';
 import { formatMoney, parseMoney, toMoneyInput } from '../lib/format';
-import { describeRule, friendlyDate, nextOccurrence, parseDateKey, ruleFromSeries, sameRule } from '../lib/recurrence';
+import { dateKey, describeRule, friendlyDate, nextOccurrence, parseDateKey, ruleFromSeries, sameRule } from '../lib/recurrence';
 import { getReminderPermission, requestReminderPermission } from '../lib/reminders';
 import {
   defaultReminderDate,
@@ -32,6 +32,7 @@ import { useTaskStore } from '../store/taskStore';
 import { showToast, useUiStore } from '../store/uiStore';
 import { size } from '../theme/tokens';
 import { makeStyles, useColors } from '../theme/theme';
+import { DayPicker } from './DayPicker';
 import { ReminderPicker } from './ReminderPicker';
 import { RepeatPicker } from './RepeatPicker';
 import { useKeyboardInset } from './useKeyboardInset';
@@ -68,7 +69,8 @@ function initialReminder(source, ownSeries) {
 
 // `task`: edit an existing task (a one-off, or one occurrence of a repeating task)
 // `series`: edit a repeating task itself (from Tasks → Coming up)
-export function TaskForm({ task, series, initialTitle = '', initialSource = 'manual' }) {
+// `initialDay`: 'YYYY-MM-DD' when adding from a Calendar day
+export function TaskForm({ task, series, initialTitle = '', initialSource = 'manual', initialDay = null }) {
   const colors = useColors();
   const styles = useStyles();
   const editing = !!task || !!series;
@@ -105,6 +107,8 @@ export function TaskForm({ task, series, initialTitle = '', initialSource = 'man
       rule: ownSeries ? ruleFromSeries(ownSeries) : defaultRule(),
       notes: (series ? series.notes : task?.notes) ?? '',
       reminder: initialReminder(series ? null : task, series ?? (isOccurrence ? ownSeries : null)),
+      // One-offs only: the planned day (null = today / no particular day)
+      dueKey: task && !task.seriesId ? task.dueDate ?? null : initialDay && initialDay > dateKey() ? initialDay : null,
     };
     // Initial values only: later changes to the suggestion mustn't reset the form
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -118,6 +122,7 @@ export function TaskForm({ task, series, initialTitle = '', initialSource = 'man
   const [rule, setRule] = useState(initial.rule);
   const [notes, setNotes] = useState(initial.notes);
   const [reminder, setReminder] = useState(initial.reminder);
+  const [dueKey, setDueKey] = useState(initial.dueKey);
   const [reminderBlocked, setReminderBlocked] = useState(false);
   // Which optional sections are open: anything the task already has, plus what was tapped
   const [open, setOpen] = useState(() => ({
@@ -158,6 +163,18 @@ export function TaskForm({ task, series, initialTitle = '', initialSource = 'man
   const repeating = rule.frequency !== 'never';
   // Occurrences and series remind at a time on each due day; one-offs at a date + time
   const reminderTimeOnly = repeating || isOccurrence;
+  // Planning a day applies to one-off tasks (a repeat's days come from its schedule)
+  const canPlan = !repeating && !isOccurrence && !series && !locked;
+
+  // Moving the task to another day takes its reminder along (same time of day)
+  const changeDay = (key) => {
+    setDueKey(key);
+    if (reminder) {
+      const d = key ? parseDateKey(key) : new Date();
+      d.setHours(reminder.getHours(), reminder.getMinutes(), 0, 0);
+      setReminder(d);
+    }
+  };
 
   const pickEffort = (lvl) => {
     setEffort(lvl);
@@ -186,6 +203,7 @@ export function TaskForm({ task, series, initialTitle = '', initialSource = 'man
     effort !== initial.effort ||
     value !== initial.value ||
     notes !== initial.notes ||
+    dueKey !== initial.dueKey ||
     reminderChanged;
   // A new task with no name yet has nothing worth a "Discard?" prompt
   const dirty = editing ? fieldsChanged || ruleChanged : !!title.trim() || !!notes.trim() || ruleChanged;
@@ -207,7 +225,16 @@ export function TaskForm({ task, series, initialTitle = '', initialSource = 'man
 
   const openReminder = async () => {
     setOpen((o) => ({ ...o, reminder: true }));
-    if (!reminder) setReminder(defaultReminderDate());
+    if (!reminder) {
+      // Planned for a later day: 9 AM that day; otherwise the next sensible hour
+      if (dueKey && dueKey > dateKey()) {
+        const d = parseDateKey(dueKey);
+        d.setHours(9, 0, 0, 0);
+        setReminder(d);
+      } else {
+        setReminder(defaultReminderDate());
+      }
+    }
     // Ask at the moment it matters; if the answer is no, say so under the picker
     const granted = (await getReminderPermission()) === 'granted' || (await requestReminderPermission());
     setReminderBlocked(!granted);
@@ -293,7 +320,7 @@ export function TaskForm({ task, series, initialTitle = '', initialSource = 'man
         createSeries({ ...seriesFields, source }, rule);
         announceFirst(rule);
       } else {
-        addTask({ ...fields, source, remindAt: remindAtFor(null) });
+        addTask({ ...fields, source, remindAt: remindAtFor(null), dueDate: dueKey });
         AccessibilityInfo.announceForAccessibility('Task added.');
       }
       return finish();
@@ -339,7 +366,7 @@ export function TaskForm({ task, series, initialTitle = '', initialSource = 'man
       createSeries({ ...seriesFields, source: task.source }, rule, { attachTaskId: task.id });
       announceFirst(rule);
     } else {
-      updateTask(task.id, { ...fields, remindAt: remindAtFor(null) });
+      updateTask(task.id, { ...fields, remindAt: remindAtFor(null), dueDate: dueKey });
     }
     return finish();
   };
@@ -494,6 +521,8 @@ export function TaskForm({ task, series, initialTitle = '', initialSource = 'man
             />
           </>
         )}
+
+        {canPlan && <DayPicker value={dueKey} onChange={changeDay} />}
 
         {showWarning && !locked && (
           <Banner

@@ -172,6 +172,7 @@ export default function RootLayout() {
             <Stack.Screen name="month-summary" options={sheet('fitToContents')} />
             <Stack.Screen name="activity" options={sheet([0.92])} />
             <Stack.Screen name="settings" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="calendar" options={{ animation: 'slide_from_right' }} />
           </Stack>
           <OverlayHost />
         </ThemeProvider>

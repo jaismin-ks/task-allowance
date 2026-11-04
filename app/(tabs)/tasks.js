@@ -14,7 +14,7 @@ import { AppText } from '../../components/ui/AppText';
 import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { IconButton } from '../../components/ui/Headers';
-import { ProfileButton } from '../../components/ProfileButton';
+import { HeaderActions } from '../../components/ProfileButton';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { completeTask, uncompleteTask } from '../../db/operations/completeTask';
 import { formatHeaderDate, formatMoney, greeting, moneyToWords } from '../../lib/format';
@@ -42,7 +42,7 @@ export default function TasksScreen() {
   const scrollRef = useRef(null);
   useScrollToTop(scrollRef);
 
-  const { pending, completedToday, series, loaded, load } = useTaskStore();
+  const { pending, upcoming, completedToday, series, loaded, load } = useTaskStore();
   const { progress, profile, earnedToday, overAllowance, budget, streak, refresh } = usePoolStore();
   const wishlistCount = useWishlistStore((s) => s.others.length + (s.goal ? 1 : 0));
   const loadWishlist = useWishlistStore((s) => s.loadItems);
@@ -173,7 +173,7 @@ export default function TasksScreen() {
               <AppText variant="caption" color={colors.textMuted}>{formatHeaderDate()}</AppText>
               <StreakChip streak={streak} />
             </View>
-            <ProfileButton />
+            <HeaderActions />
           </View>
           <AppText variant="h1" accessibilityRole="header">
             {greeting()}
@@ -284,7 +284,7 @@ export default function TasksScreen() {
               </View>
             )}
 
-            <RepeatingList series={shownSeries} currency={currency} />
+            <RepeatingList series={shownSeries} planned={applyTaskFilters(upcoming, filters)} currency={currency} />
           </>
         ) : null}
       </ScrollView>

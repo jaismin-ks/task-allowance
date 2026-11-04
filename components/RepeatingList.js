@@ -1,18 +1,19 @@
 // components/RepeatingList.js
-// Tasks → "Coming up": one collapsed row for repeating tasks that aren't on today's
-// list (e.g. a weekly task due Thursday), so they stay visible and editable without
-// a second list of everything. Tap to expand; tap an entry to edit the series.
+// Tasks → "Coming up": one collapsed row for what's ahead — tasks planned for a
+// later day, and repeating tasks that aren't on today's list (e.g. a weekly task
+// due Thursday). Tap to expand; tap an entry to edit it. The Calendar shows the
+// same things day by day.
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { formatMoney, moneyToWords } from '../lib/format';
-import { addDays, describeRule, friendlyDate, nextOccurrence, ruleFromSeries } from '../lib/recurrence';
+import { addDays, describeRule, friendlyDate, nextOccurrence, parseDateKey, ruleFromSeries } from '../lib/recurrence';
 import { radius } from '../theme/tokens';
 import { makeStyles, useColors } from '../theme/theme';
 import { AppText } from './ui/AppText';
 import { Icon } from './ui/Icon';
 
-export function RepeatingList({ series, currency }) {
+export function RepeatingList({ series, planned = [], currency }) {
   const colors = useColors();
   const styles = useStyles();
   const [open, setOpen] = useState(false);
@@ -21,14 +22,16 @@ export function RepeatingList({ series, currency }) {
   // Those are reached by long-pressing their row, so listing them again is noise.
   const upcoming = useMemo(
     () =>
-      series
-        .filter((s) => !s.hasPending && !s.dueToday)
-        .map((s) => {
-          const rule = ruleFromSeries(s);
-          return { ...s, rule, next: nextOccurrence(rule, addDays(new Date(), 1)) };
-        })
-        .sort((a, b) => (a.next?.getTime() ?? Infinity) - (b.next?.getTime() ?? Infinity)),
-    [series]
+      [
+        ...planned.map((t) => ({ ...t, kind: 'task', next: parseDateKey(t.dueDate) })),
+        ...series
+          .filter((s) => !s.hasPending && !s.dueToday)
+          .map((s) => {
+            const rule = ruleFromSeries(s);
+            return { ...s, kind: 'series', rule, next: nextOccurrence(rule, addDays(new Date(), 1)) };
+          }),
+      ].sort((a, b) => (a.next?.getTime() ?? Infinity) - (b.next?.getTime() ?? Infinity)),
+    [series, planned]
   );
   if (!upcoming.length) return null;
 
@@ -41,7 +44,7 @@ export function RepeatingList({ series, currency }) {
         onPress={() => setOpen((o) => !o)}
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
-        accessibilityLabel={`Coming up, ${upcoming.length} repeating ${upcoming.length === 1 ? 'task' : 'tasks'}. Next: ${summary}`}
+        accessibilityLabel={`Coming up, ${upcoming.length} ${upcoming.length === 1 ? 'task' : 'tasks'}. Next: ${summary}`}
         style={({ pressed }) => [styles.header, pressed && { backgroundColor: colors.surfaceRaised }]}
       >
         <View style={styles.icon}>
@@ -61,21 +64,21 @@ export function RepeatingList({ series, currency }) {
 
       {open &&
         upcoming.map((s) => {
-          const schedule = describeRule(s.rule);
+          const isTask = s.kind === 'task';
+          const schedule = isTask ? 'Planned' : describeRule(s.rule);
           return (
             <Pressable
-              key={s.id}
-              onPress={() => router.push(`/task/series/${s.id}`)}
+              key={`${s.kind}-${s.id}`}
+              onPress={() => router.push(isTask ? `/task/${s.id}` : `/task/series/${s.id}`)}
               accessibilityRole="button"
-              accessibilityLabel={`${s.title}, ${moneyToWords(s.monetaryValue, currency)}, ${schedule}${s.next ? `, next ${friendlyDate(s.next)}` : ''}`}
-              accessibilityHint="Edit repeating task"
+              accessibilityLabel={`${s.title}, ${moneyToWords(s.monetaryValue, currency)}, ${schedule}${s.next ? `, ${isTask ? '' : 'next '}${friendlyDate(s.next)}` : ''}`}
+              accessibilityHint={isTask ? 'Edit task' : 'Edit repeating task'}
               style={({ pressed }) => [styles.row, pressed && { backgroundColor: colors.surfaceRaised }]}
             >
               <View style={styles.body}>
                 <AppText variant="body">{s.title}</AppText>
                 <AppText variant="small" color={colors.textMuted}>
-                  {schedule}
-                  {s.next ? ` · next ${friendlyDate(s.next)}` : ''}
+                  {isTask ? friendlyDate(s.next) : `${schedule}${s.next ? ` · next ${friendlyDate(s.next)}` : ''}`}
                 </AppText>
               </View>
               <AppText variant="numeric" color={colors.textMuted}>{formatMoney(s.monetaryValue, currency)}</AppText>

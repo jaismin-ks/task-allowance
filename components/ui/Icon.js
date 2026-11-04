@@ -4,9 +4,11 @@
 import {
   ArrowRight,
   Bell,
+  Calendar,
   Camera,
   ChartColumn,
   Check,
+  Circle,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -42,9 +44,11 @@ import { useColors } from '../../theme/theme';
 const ICONS = {
   'arrow-right': ArrowRight,
   bell: Bell,
+  calendar: Calendar,
   camera: Camera,
   chart: ChartColumn,
   check: Check,
+  circle: Circle,
   'chevron-down': ChevronDown,
   'chevron-left': ChevronLeft,
   'chevron-right': ChevronRight,

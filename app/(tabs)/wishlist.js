@@ -4,7 +4,7 @@ import { useCallback, useRef } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SCREEN_GUTTER, useBottomChrome } from '../../components/layout';
-import { ProfileButton } from '../../components/ProfileButton';
+import { HeaderActions } from '../../components/ProfileButton';
 import { WishlistCard, WishlistGoalCard } from '../../components/WishlistCard';
 import { AppText } from '../../components/ui/AppText';
 import { Banner } from '../../components/ui/Banner';
@@ -66,7 +66,7 @@ export default function WishlistScreen() {
         <AppText variant="h1" accessibilityRole="header">Wishlist</AppText>
         <View style={styles.headerRight}>
           <Button label="Add" icon="plus" small variant="secondary" onPress={addItem} accessibilityLabel="Add an item" />
-          <ProfileButton />
+          <HeaderActions />
         </View>
       </View>
 

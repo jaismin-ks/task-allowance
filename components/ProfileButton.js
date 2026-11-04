@@ -8,6 +8,7 @@ import { usePoolStore } from '../store/poolStore';
 import { size as sizes } from '../theme/tokens';
 import { makeStyles, useColors } from '../theme/theme';
 import { AppText } from './ui/AppText';
+import { IconButton } from './ui/Headers';
 import { Icon } from './ui/Icon';
 
 const initialOf = (name) => {
@@ -57,7 +58,19 @@ export function ProfileButton() {
   );
 }
 
+// Top right of Tasks and Wishlist: Calendar, then Profile & settings
+export function HeaderActions() {
+  const styles = useStyles();
+  return (
+    <View style={styles.actions}>
+      <IconButton icon="calendar" label="Calendar" size={22} onPress={() => router.push('/calendar')} />
+      <ProfileButton />
+    </View>
+  );
+}
+
 const useStyles = makeStyles((colors) => ({
+  actions: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   avatar: {
     alignItems: 'center',
     justifyContent: 'center',

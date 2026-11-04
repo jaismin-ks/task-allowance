@@ -26,6 +26,12 @@ includes most). 👤 needs you (a device, an account, or a decision).
 | Daily reminder 📦 | Local notification, live copy, quiet once done, Settings → Reminder |
 | Rating prompt 📦 | After the second goal is bought, once per version |
 | Expo SDK 58 | Plus fixes for the tab bar crash and sheet header overlap it caused |
+| Calmer Tasks screen | UX review 1–6: one goal card, quiet rows, Coming up, search on demand |
+| Two tabs + profile | Tasks · Wishlist; Profile & settings and Calendar top right |
+| Add task, simplified | Name + effort; value fills itself in to keep you on track for the allowance |
+| Reminders + notes per task | Optional date/time (or time for repeats), optional note |
+| Swipe tray + undo | Tap the tick to undo; swipe left for Done/Undo · Edit · Delete |
+| Calendar + planning | Month view of each day's tasks; plan one-off tasks for a later day |
 
 ## Next: polish (free)
 
