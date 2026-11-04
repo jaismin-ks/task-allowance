@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { router, useFocusEffect, useScrollToTop } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SCREEN_GUTTER, useBottomChrome } from '../../../components/layout';
 import { AccentPicker } from '../../../components/AccentPicker';
@@ -14,14 +14,16 @@ import { Button } from '../../../components/ui/Button';
 import { Chip } from '../../../components/ui/Chip';
 import { TextField } from '../../../components/ui/TextField';
 import { Toggle } from '../../../components/ui/Toggle';
-import { updateProfile } from '../../../db/operations/userProfile';
+import { getProfile, updateProfile } from '../../../db/operations/userProfile';
 import { resetAllData } from '../../../db/operations/wishlist';
+import { applyBackup, exportBackup, pickBackup } from '../../../lib/backupFiles';
 import { runCompletionIntegrityCheck } from '../../../lib/devChecks';
 import { formatMoney } from '../../../lib/format';
 import { deleteAllItemPhotos } from '../../../lib/itemPhotos';
 import { flags, usePrefs } from '../../../lib/prefs';
 import { isVoiceSupported } from '../../../lib/voiceInput';
 import { usePoolStore } from '../../../store/poolStore';
+import { showToast } from '../../../store/uiStore';
 import { useTaskStore } from '../../../store/taskStore';
 import { useWishlistStore } from '../../../store/wishlistStore';
 import { makeStyles, useColors } from '../../../theme/theme';
@@ -53,6 +55,8 @@ export default function SettingsScreen() {
     return current && current !== 'Me' ? current : '';
   });
   const [resetOpen, setResetOpen] = useState(false);
+  const [backupBusy, setBackupBusy] = useState(false);
+  const [lastBackupAt, setLastBackupAt] = useState(() => flags.get('lastBackupAt'));
   const [checkResults, setCheckResults] = useState(null);
   const currency = budget.currencyCode;
 
@@ -68,13 +72,87 @@ export default function SettingsScreen() {
     resetAllData();
     deleteAllItemPhotos();
     flags.clearAll();
+    setLastBackupAt(null);
     usePrefs.setState({ haptics: true, motion: 'system' });
     await AsyncStorage.removeItem('lastKnownMonthKey');
+    reloadEverything();
+    router.replace('/onboarding');
+  };
+
+  const reloadEverything = () => {
     useTaskStore.getState().load();
     useWishlistStore.getState().loadItems();
     refresh();
-    router.replace('/onboarding');
   };
+
+  const backUp = async () => {
+    if (backupBusy) return;
+    setBackupBusy(true);
+    try {
+      const result = await exportBackup();
+      if (result === 'unavailable') {
+        Alert.alert('Can’t share files here', 'This device doesn’t offer a way to save or share files.');
+      } else {
+        setLastBackupAt(flags.get('lastBackupAt'));
+      }
+    } catch {
+      Alert.alert('Backup didn’t finish', 'Nothing was changed. Try again.');
+    } finally {
+      setBackupBusy(false);
+    }
+  };
+
+  const restore = async () => {
+    if (backupBusy) return;
+    let picked;
+    try {
+      picked = await pickBackup();
+    } catch {
+      Alert.alert('Couldn’t open that file', 'Try again, or pick a different file.');
+      return;
+    }
+    if (picked.status === 'canceled') return;
+    if (picked.status === 'invalid') {
+      Alert.alert('Can’t restore this file', picked.error);
+      return;
+    }
+    const { tasks, wishlistItems, months, exportedAt } = picked.summary;
+    const from = exportedAt
+      ? ` from ${new Date(exportedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+      : '';
+    const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+    Alert.alert(
+      'Replace everything on this phone?',
+      `This backup${from} has ${plural(tasks, 'task')}, ${plural(wishlistItems, 'wishlist item')} and ${plural(months, 'month')} of earnings. What’s on this phone now will be erased.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Replace everything',
+          style: 'destructive',
+          onPress: () => {
+            try {
+              applyBackup(picked.backup);
+            } catch {
+              Alert.alert('Restore didn’t finish', 'Nothing was changed. The backup file may be damaged.');
+              return;
+            }
+            reloadEverything();
+            const restoredName = usePoolStore.getState().profile?.displayName;
+            setName(restoredName && restoredName !== 'Me' ? restoredName : '');
+            if (!getProfile()) {
+              router.replace('/onboarding');
+              return;
+            }
+            showToast('Backup restored.');
+          },
+        },
+      ]
+    );
+  };
+
+  const lastBackupText = lastBackupAt
+    ? `Last backup ${new Date(lastBackupAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}.`
+    : 'You haven’t made a backup yet.';
 
   return (
     <>
@@ -189,7 +267,17 @@ export default function SettingsScreen() {
           </View>
         </SettingsGroup>
 
-        <SettingsGroup title="Data">
+        <SettingsGroup
+          title="Data"
+          footer="Your data lives only on this phone. A backup is a file you keep — in Files, iCloud Drive, Google Drive or email — so you can restore it after deleting the app or on a new phone."
+        >
+          <SettingsRow
+            label={backupBusy ? 'Preparing backup…' : 'Back up data'}
+            helper={lastBackupText}
+            onPress={backUp}
+            accessibilityLabel={`Back up data. ${lastBackupText}`}
+          />
+          <SettingsRow label="Restore from backup" onPress={restore} />
           <SettingsRow label="Reset all data" danger onPress={() => setResetOpen(true)} last />
         </SettingsGroup>
 
