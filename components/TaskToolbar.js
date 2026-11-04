@@ -11,7 +11,9 @@ import { makeStyles, useColors } from '../theme/theme';
 import { AppText } from './ui/AppText';
 import { Icon } from './ui/Icon';
 
-export function TaskToolbar({ shown, total }) {
+// autoFocus: opened from the search icon. onDismiss: the field lost focus while empty,
+// so a short list can hide the toolbar again.
+export function TaskToolbar({ shown, total, autoFocus = false, onDismiss }) {
   const colors = useColors();
   const styles = useStyles();
   const filters = useTaskFilters();
@@ -35,6 +37,10 @@ export function TaskToolbar({ shown, total }) {
             ref={inputRef}
             value={query}
             onChangeText={setQuery}
+            autoFocus={autoFocus}
+            onBlur={() => {
+              if (!query.trim()) onDismiss?.();
+            }}
             placeholder="Search tasks"
             placeholderTextColor={colors.textMuted}
             selectionColor={colors.accentText}

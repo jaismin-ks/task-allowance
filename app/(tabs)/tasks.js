@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Composer } from '../../components/Composer';
-import { DailyGuideStrip } from '../../components/DailyGuideStrip';
 import { GoalCard } from '../../components/GoalCard';
 import { SCREEN_GUTTER, useBottomChrome } from '../../components/layout';
 import { RepeatingList } from '../../components/RepeatingList';
@@ -14,12 +13,13 @@ import { TaskToolbar } from '../../components/TaskToolbar';
 import { AppText } from '../../components/ui/AppText';
 import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { IconButton } from '../../components/ui/Headers';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { completeTask, uncompleteTask } from '../../db/operations/completeTask';
 import { formatHeaderDate, formatMoney, greeting, moneyToWords } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { flags } from '../../lib/prefs';
-import { activeFilterCount, applyTaskFilters, isFiltering } from '../../lib/taskFilters';
+import { activeFilterCount, applyTaskFilters, DEFAULT_FILTERS, isFiltering } from '../../lib/taskFilters';
 import { useVoiceAvailable } from '../../lib/voiceInput';
 import { usePoolStore } from '../../store/poolStore';
 import { useTaskFilters } from '../../store/taskFilterStore';
@@ -30,6 +30,9 @@ import { durations } from '../../theme/motion';
 import { radius } from '../../theme/tokens';
 import { makeStyles, useColors } from '../../theme/theme';
 
+// Below this many tasks, search + filter hide behind an icon
+const SEARCH_TOOLBAR_MIN_TASKS = 8;
+
 export default function TasksScreen() {
   const colors = useColors();
   const styles = useStyles();
@@ -39,8 +42,7 @@ export default function TasksScreen() {
   useScrollToTop(scrollRef);
 
   const { pending, completedToday, series, loaded, load } = useTaskStore();
-  const { progress, profile, earnedToday, dailyCap, overAllowance, budget, streak, goalEtaDays, refresh } =
-    usePoolStore();
+  const { progress, profile, earnedToday, overAllowance, budget, streak, refresh } = usePoolStore();
   const wishlistCount = useWishlistStore((s) => s.others.length + (s.goal ? 1 : 0));
   const loadWishlist = useWishlistStore((s) => s.loadItems);
   const voiceAvailable = useVoiceAvailable();
@@ -127,6 +129,12 @@ export default function TasksScreen() {
   const shownSeries = applyTaskFilters(series, filters);
   const shown = shownPending.length + shownDone.length;
 
+  // Search + filter show up when they help (docs/UX_REVIEW.md #3): a longer list,
+  // something already narrowing it, or the search icon was tapped
+  const [searchOpen, setSearchOpen] = useState(false);
+  const toolbarVisible =
+    total >= SEARCH_TOOLBAR_MIN_TASKS || filtering || filters.sort !== DEFAULT_FILTERS.sort || searchOpen;
+
   return (
     <View style={styles.screen}>
       <ScrollView
@@ -138,8 +146,11 @@ export default function TasksScreen() {
       >
         <View style={styles.header}>
           <View style={styles.headerTop}>
-            <AppText variant="caption" color={colors.textMuted}>{formatHeaderDate()}</AppText>
-            <StreakChip streak={streak} />
+            <View style={styles.dateRow}>
+              <AppText variant="caption" color={colors.textMuted}>{formatHeaderDate()}</AppText>
+              <StreakChip streak={streak} />
+            </View>
+            <IconButton icon="chart" label="Activity" size={20} onPress={() => router.push('/activity')} />
           </View>
           <AppText variant="h1" accessibilityRole="header">
             {greeting()}
@@ -160,29 +171,36 @@ export default function TasksScreen() {
               progress={progress}
               currency={currency}
               hasWishlistItems={wishlistCount > 0}
-              etaDays={goalEtaDays}
-            />
-            <DailyGuideStrip
               earnedToday={earnedToday}
-              dailyGuide={dailyCap}
               overAllowance={overAllowance}
-              currency={currency}
             />
-
-            {(total > 0 || series.length > 0) && <TaskToolbar shown={shown} total={total} />}
 
             <View style={styles.sectionHeader}>
               <AppText variant="h2" accessibilityRole="header">Today</AppText>
-              {total > 0 && (
-                <AppText
-                  variant="numeric"
-                  color={colors.textMuted}
-                  accessibilityLabel={`${completedToday.length} of ${total} done`}
-                >
-                  {completedToday.length} / {total}
-                </AppText>
-              )}
+              <View style={styles.sectionRight}>
+                {total > 0 && (
+                  <AppText
+                    variant="numeric"
+                    color={colors.textMuted}
+                    accessibilityLabel={`${completedToday.length} of ${total} done`}
+                  >
+                    {completedToday.length} / {total}
+                  </AppText>
+                )}
+                {total > 0 && !toolbarVisible && (
+                  <IconButton icon="search" label="Search tasks" size={20} onPress={() => setSearchOpen(true)} />
+                )}
+              </View>
             </View>
+
+            {total > 0 && toolbarVisible && (
+              <TaskToolbar
+                shown={shown}
+                total={total}
+                autoFocus={searchOpen && total < SEARCH_TOOLBAR_MIN_TASKS}
+                onDismiss={() => setSearchOpen(false)}
+              />
+            )}
 
             {total === 0 ? (
               <EmptyState
@@ -248,13 +266,16 @@ const useStyles = makeStyles((colors) => ({
   screen: { flex: 1, backgroundColor: colors.bg },
   content: { paddingHorizontal: SCREEN_GUTTER, gap: 16 },
   header: { gap: 6, marginBottom: 4 },
-  headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 32 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginRight: -10 },
+  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 },
+  sectionRight: { flexDirection: 'row', alignItems: 'center', gap: 4, marginRight: -10 },
   gap: { gap: 12 },
   sectionHeader: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 8,
+    minHeight: 44,
+    marginTop: 4,
   },
   list: { gap: 10 },
   allDone: { alignItems: 'center', gap: 6, paddingVertical: 24 },

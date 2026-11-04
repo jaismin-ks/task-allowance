@@ -1,10 +1,12 @@
 // components/GoalCard.js
 // S1 goal card: "Saving for" + Available vs price. Every state from the spec:
 // no goal, goal without price, in progress, and "Ready to buy" after "Not yet".
+// The one headline on Tasks (docs/UX_REVIEW.md): one number, one bar, and one quiet
+// line for today. Percent, "to go" and the ETA live in Item detail; the daily guide
+// lives in Add task (suggested range) and Activity.
 import { router } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import { formatMoney, moneyToWords } from '../lib/format';
-import { describeEta } from '../lib/stats';
 import { radius } from '../theme/tokens';
 import { makeStyles, useColors } from '../theme/theme';
 import { AppText } from './ui/AppText';
@@ -13,9 +15,23 @@ import { CountUp } from './ui/CountUp';
 import { Icon } from './ui/Icon';
 import { ProgressBar } from './ui/ProgressBar';
 
-export function GoalCard({ progress, currency, hasWishlistItems, etaDays }) {
+// "$3.20 earned today", or the spec's over-allowance note (never a block)
+function TodayLine({ earnedToday, overAllowance, currency }) {
+  const colors = useColors();
+  if (!overAllowance && !(earnedToday > 0)) return null;
+  return (
+    <AppText variant="small" color={colors.textMuted}>
+      {overAllowance
+        ? 'You’ve reached this month’s allowance. Anything extra still counts.'
+        : `${formatMoney(earnedToday, currency)} earned today`}
+    </AppText>
+  );
+}
+
+export function GoalCard({ progress, currency, hasWishlistItems, earnedToday = 0, overAllowance = false }) {
   const colors = useColors();
   const styles = useStyles();
+  const today = <TodayLine earnedToday={earnedToday} overAllowance={overAllowance} currency={currency} />;
   if (!progress) {
     return (
       <View style={[styles.card, styles.empty]}>
@@ -31,6 +47,7 @@ export function GoalCard({ progress, currency, hasWishlistItems, etaDays }) {
           onPress={() => router.navigate(hasWishlistItems ? '/wishlist' : '/wishlist/new')}
           style={styles.alignStart}
         />
+        {today}
       </View>
     );
   }
@@ -51,13 +68,13 @@ export function GoalCard({ progress, currency, hasWishlistItems, etaDays }) {
           <Icon name="pencil" size={16} color={colors.warning} />
           <AppText variant="body" color={colors.warning}>Add a price to track progress</AppText>
         </View>
+        {today}
       </Pressable>
     );
   }
 
   const money = (n, opts) => formatMoney(n, currency, opts);
   const pct = Math.floor(progress.percentage);
-  const eta = describeEta(etaDays);
 
   return (
     <Pressable
@@ -67,7 +84,12 @@ export function GoalCard({ progress, currency, hasWishlistItems, etaDays }) {
       accessibilityLabel={
         `Saving for ${progress.itemTitle}. ` +
         `${moneyToWords(progress.available, currency)} of ${moneyToWords(progress.price, currency)}` +
-        (progress.reached ? '. Ready to buy.' : `, ${pct} percent.${eta ? ` At your recent pace, ${eta}.` : ''}`)
+        (progress.reached ? '. Ready to buy.' : `, ${pct} percent.`) +
+        (overAllowance
+          ? ' You’ve reached this month’s allowance. Anything extra still counts.'
+          : earnedToday > 0
+            ? ` ${moneyToWords(earnedToday, currency)} earned today.`
+            : '')
       }
       accessibilityHint="Opens item details"
     >
@@ -90,7 +112,7 @@ export function GoalCard({ progress, currency, hasWishlistItems, etaDays }) {
           accessibilityLabel={`${moneyToWords(progress.available, currency)} available of ${moneyToWords(progress.price, currency)}`}
         />
         <AppText variant="numeric" color={colors.textMuted} accessible={false}>
-          / {money(progress.price, { trim: true })}
+          of {money(progress.price, { trim: true })}
         </AppText>
       </View>
       {progress.reached ? (
@@ -109,14 +131,7 @@ export function GoalCard({ progress, currency, hasWishlistItems, etaDays }) {
               text: `${money(progress.available)} of ${money(progress.price, { trim: true })}`,
             }}
           />
-          <AppText variant="caption" color={colors.textMuted}>
-            {pct}% · {money(progress.remaining)} TO GO
-          </AppText>
-          {eta && (
-            <AppText variant="small" color={colors.textMuted}>
-              At your recent pace, {eta}.
-            </AppText>
-          )}
+          {today}
         </>
       )}
     </Pressable>

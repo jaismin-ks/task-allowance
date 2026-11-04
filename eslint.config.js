@@ -6,7 +6,7 @@ const globals = require('globals');
 module.exports = defineConfig([
   expoConfig,
   {
-    ignores: ['dist/*'],
+    ignores: ['dist/*', '.expo/*'],
   },
   {
     files: ['tests/**/*.js', 'jest.config.js'],

@@ -14,6 +14,7 @@ import { SheetHeader } from '../../components/ui/Headers';
 import { Icon } from '../../components/ui/Icon';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { formatMoney } from '../../lib/format';
+import { describeEta } from '../../lib/stats';
 import { usePoolStore } from '../../store/poolStore';
 import { showToast } from '../../store/uiStore';
 import { getItem, needsDetails, useWishlistStore } from '../../store/wishlistStore';
@@ -28,6 +29,7 @@ export default function ItemDetailScreen() {
   const { setPriority, updateItem, deleteItem, redeem } = useWishlistStore();
   const currency = usePoolStore((s) => s.budget.currencyCode);
   const progress = usePoolStore((s) => s.progress);
+  const eta = describeEta(usePoolStore((s) => s.goalEtaDays));
   const [item, setItem] = useState(() => getItem(id));
   const [editing, setEditing] = useState(() => !!item && needsDetails(item));
 
@@ -167,6 +169,11 @@ export default function ItemDetailScreen() {
                 <AppText variant="caption" color={colors.textMuted}>
                   {Math.floor(goalProgress.percentage)}% · {formatMoney(goalProgress.remaining, currency)} TO GO
                 </AppText>
+                {eta && (
+                  <AppText variant="small" color={colors.textMuted}>
+                    At your recent pace, {eta}.
+                  </AppText>
+                )}
               </>
             )}
           </View>

@@ -1,50 +1,28 @@
 // components/StreakChip.js
-// Tasks header: "4-day streak". Before the first task of the day it nudges
-// ("Keep your 4-day streak") instead of celebrating. Tap → Activity.
-import { router } from 'expo-router';
-import { Pressable } from 'react-native';
-import { radius, size } from '../theme/tokens';
+// Tasks header: "🔥 4-day streak", shown only as a win — at least 2 days in a row
+// and today already counted. No "keep your streak" warning on screen; the evening
+// reminder does the nudging (docs/UX_REVIEW.md: celebrate, don't warn).
+import { View } from 'react-native';
 import { makeStyles, useColors } from '../theme/theme';
 import { AppText } from './ui/AppText';
 import { Icon } from './ui/Icon';
 
+export const MIN_STREAK_SHOWN = 2;
+
 export function StreakChip({ streak }) {
   const colors = useColors();
   const styles = useStyles();
-  if (!streak?.current) return null;
-
-  const days = `${streak.current}-day`;
-  const atRisk = !streak.doneToday;
-  const label = atRisk ? `Keep your ${days} streak` : `${days} streak`;
-
+  if (!streak?.doneToday || streak.current < MIN_STREAK_SHOWN) return null;
   return (
-    <Pressable
-      onPress={() => router.push('/activity')}
-      accessibilityRole="button"
-      accessibilityLabel={atRisk ? `${label}. Finish a task today to keep it.` : label}
-      accessibilityHint="Opens activity"
-      hitSlop={6}
-      style={({ pressed }) => [styles.chip, atRisk ? styles.atRisk : styles.live, pressed && styles.pressed]}
-    >
-      <Icon name="flame" size={14} color={atRisk ? colors.warning : colors.accentText} strokeWidth={2} />
-      <AppText variant="caption" color={atRisk ? colors.warning : colors.accentText} maxFontSizeMultiplier={1.3}>
-        {label.toUpperCase()}
+    <View style={styles.row} accessible accessibilityLabel={`${streak.current}-day streak`}>
+      <Icon name="flame" size={13} color={colors.accentText} strokeWidth={2} />
+      <AppText variant="caption" color={colors.accentText} maxFontSizeMultiplier={1.3}>
+        {streak.current}-DAY STREAK
       </AppText>
-    </Pressable>
+    </View>
   );
 }
 
-const useStyles = makeStyles((colors) => ({
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    minHeight: size.hit - 12,
-    paddingHorizontal: 10,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-  },
-  live: { backgroundColor: colors.accentTint, borderColor: colors.accentRing },
-  atRisk: { backgroundColor: colors.warningTint, borderColor: colors.warningBorder },
-  pressed: { opacity: 0.8 },
+const useStyles = makeStyles(() => ({
+  row: { flexDirection: 'row', alignItems: 'center', gap: 4 },
 }));

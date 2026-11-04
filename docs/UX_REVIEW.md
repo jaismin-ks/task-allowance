@@ -58,13 +58,15 @@ a "↻ DAILY" tag, "FROM THU OCT 8", "MISSED 2", and the value.
 
 ## Recommendations (in priority order)
 
+1–5 shipped Nov 4 (calm Tasks screen). 6–8 are next.
+
 | # | Change | Removes | Effort |
 | --- | --- | --- | --- |
-| 1 | **One calm goal card.** "Saving for Headphones", **$124.50 of $349**, one bar, and one quiet line: "$3.20 earned today". The daily guide strip goes away. Its number stays in Add task, where it sets the suggested range, and in Activity. The % and "to go" move to Item detail; the ETA moves to Item detail and Activity. | 1 bar, 5 numbers, about 150pt | S |
-| 2 | **Streak only when it's a win**: a small "🔥 4 days" next to the date once you've done a task today. No "Keep your streak" on screen; the evening reminder already says it. | 1 amber warning | XS |
-| 3 | **Search and filter appear when they help**: a search icon in the "Today" header, with the full toolbar shown once there are 8+ tasks or a filter is on. | 1 row for most users | S |
-| 4 | **Simpler task rows**: title and value on line 1; line 2 only if there's something to say, muted not amber: "↻ Daily · missed 2". Effort as bars only, with no "EFFORT 2/5 · 20 MIN" text and no "VOICE". Screen-reader labels keep everything. | 2–4 items per row | S |
-| 5 | **"Repeating" becomes "Coming up"**: only repeating tasks with nothing on today's list, collapsed to one row ("3 repeating · next: Laundry, Thu") that expands. | Duplicate rows | S |
+| ✅ 1 | **One calm goal card.** "Saving for Headphones", **$124.50 of $349**, one bar, and one quiet line: "$3.20 earned today". The daily guide strip goes away. Its number stays in Add task, where it sets the suggested range, and in Activity. The % and "to go" move to Item detail; the ETA moves to Item detail and Activity. | 1 bar, 5 numbers, about 150pt | S |
+| ✅ 2 | **Streak only when it's a win**: a small "🔥 4 days" next to the date once you've done a task today. No "Keep your streak" on screen; the evening reminder already says it. | 1 amber warning | XS |
+| ✅ 3 | **Search and filter appear when they help**: a search icon in the "Today" header, with the full toolbar shown once there are 8+ tasks or a filter is on. | 1 row for most users | S |
+| ✅ 4 | **Simpler task rows**: title and value on line 1; line 2 only if there's something to say, muted not amber: "↻ Daily · missed 2". Effort as bars only, with no "EFFORT 2/5 · 20 MIN" text and no "VOICE". Screen-reader labels keep everything. | 2–4 items per row | S |
+| ✅ 5 | **"Repeating" becomes "Coming up"**: only repeating tasks with nothing on today's list, collapsed to one row ("3 repeating · next: Laundry, Thu") that expands. | Duplicate rows | S |
 | 6 | **Lighter Add task**: Repeat collapses to one row ("Repeat · Never ›") that opens the chips. Shorter helpers. | About 120pt of options | S |
 | 7 | **Settings regroup** into Allowance · Reminders & feel (reminder, haptics, voice) · Appearance (theme, accent, motion) · Data · About. Drop the "Activity" and "Daily guide" rows; both are reachable from Tasks. | 2 groups, 2 rows | XS |
 | 8 | **Fewer capitals**: sentence case for captions inside cards and rows. Keep caps only for the date line and tags. | | XS |

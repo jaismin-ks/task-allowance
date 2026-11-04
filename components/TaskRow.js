@@ -8,9 +8,8 @@ import { useRef } from 'react';
 import { Pressable, View } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Animated, { FadeInDown, interpolate, LinearTransition, useAnimatedStyle } from 'react-native-reanimated';
-import { effortInfo } from '../lib/effort';
 import { formatMoney, moneyToWords } from '../lib/format';
-import { dateKey, friendlyDate, parseDateKey, shortDate } from '../lib/recurrence';
+import { dateKey, friendlyDate, parseDateKey } from '../lib/recurrence';
 import { useReducedMotion } from '../lib/prefs';
 import { radius } from '../theme/tokens';
 import { makeStyles, useColors } from '../theme/theme';
@@ -28,13 +27,24 @@ export function TaskRow({ task, currency, onComplete, onEdit, onDelete }) {
   const reduced = useReducedMotion();
   const swipeRef = useRef(null);
   const done = task.completionStatus === 'completed';
-  const effort = effortInfo(task.effortRating);
   const value = formatMoney(task.monetaryValue, currency, { signed: done });
 
   // Repeating occurrences show how often, and missed ones show the day they were for
   const repeats = task.seriesId && task.frequency ? task.frequency : null;
   const missedFrom = !done && task.dueDate && task.dueDate < dateKey() ? parseDateKey(task.dueDate) : null;
   const missedCount = !done && task.missedCount > 0 ? task.missedCount : 0;
+
+  // One quiet line, only when there's something to say (docs/UX_REVIEW.md #4):
+  // "Daily · missed 2" / "Weekly · from Mon, Oct 5". Muted, never amber — a miss
+  // isn't something to fix. Effort is the bars by the value; the screen reader
+  // label below still says everything.
+  const frequencyName = repeats ? repeats[0].toUpperCase() + repeats.slice(1) : null;
+  const missedText = missedCount
+    ? `missed ${missedCount}`
+    : missedFrom
+      ? `from ${friendlyDate(missedFrom)}`
+      : null;
+  const detail = done ? null : [frequencyName, missedText].filter(Boolean).join(' · ') || null;
 
   const a11yLabel =
     `${task.title}, ${moneyToWords(task.monetaryValue, currency)}, ` +
@@ -94,33 +104,21 @@ export function TaskRow({ task, currency, onComplete, onEdit, onDelete }) {
             >
               {task.title}
             </AppText>
-            <View style={styles.meta}>
-              <EffortMeter level={task.effortRating} scale={0.8} />
-              <AppText variant="caption" color={colors.textMuted} style={styles.flex}>
-                EFFORT {task.effortRating}/5 · {effort.short}
-                {task.source === 'voice' ? ' · VOICE' : ''}
-              </AppText>
-            </View>
-            {(repeats || missedFrom || missedCount > 0) && (
+            {detail && (
               <View style={styles.meta}>
-                {repeats && (
-                  <View style={styles.repeatTag}>
-                    <Icon name="repeat" size={11} color={colors.textMuted} />
-                    <AppText variant="caption" color={colors.textMuted}>{repeats.toUpperCase()}</AppText>
-                  </View>
-                )}
-                {missedFrom && (
-                  <AppText variant="caption" color={colors.warning}>FROM {shortDate(missedFrom)}</AppText>
-                )}
-                {missedCount > 0 && (
-                  <AppText variant="caption" color={colors.warning}>MISSED {missedCount}</AppText>
-                )}
+                {repeats && <Icon name="repeat" size={12} color={colors.textMuted} />}
+                <AppText variant="small" color={colors.textMuted} style={styles.flex}>
+                  {detail}
+                </AppText>
               </View>
             )}
           </View>
-          <AppText variant="numeric" color={done ? colors.accentText : colors.text} style={styles.value}>
-            {value}
-          </AppText>
+          <View style={styles.right}>
+            <AppText variant="numeric" color={done ? colors.accentText : colors.text}>
+              {value}
+            </AppText>
+            {!done && <EffortMeter level={task.effortRating} scale={0.6} />}
+          </View>
         </Pressable>
       </ReanimatedSwipeable>
     </Animated.View>
@@ -183,8 +181,7 @@ const useStyles = makeStyles((colors) => ({
   pressed: { backgroundColor: colors.surfaceRaised },
   body: { flex: 1, gap: 6 },
   struck: { textDecorationLine: 'line-through' },
-  meta: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  meta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   flex: { flexShrink: 1 },
-  repeatTag: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  value: { marginLeft: 8 },
+  right: { marginLeft: 8, alignItems: 'flex-end', gap: 6 },
 }));
